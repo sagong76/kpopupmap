@@ -70,7 +70,7 @@ function scheduledDeploy() {
 
 function setDeployHook() {
   var ui = SpreadsheetApp.getUi();
-  var r = ui.prompt('Cloudflare Pages → 설정 → 빌드 → Deploy hooks 에서 만든 URL을 붙여넣으세요.');
+  var r = ui.prompt('Cloudflare → kpopupmap → Settings → Build → Deploy Hooks 에서 만든 URL을 붙여넣으세요.');
   if (r.getSelectedButton() === ui.Button.OK && /^https:\/\//.test(r.getResponseText().trim())) {
     PropertiesService.getScriptProperties().setProperty('DEPLOY_HOOK', r.getResponseText().trim());
     ui.alert('저장했습니다.');

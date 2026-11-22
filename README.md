@@ -24,17 +24,21 @@
 ### 2. GitHub
 이 폴더를 GitHub 저장소(예: `kpopupmap`)에 올립니다.
 
-### 3. Cloudflare Pages
-1. Cloudflare 대시보드 → **Workers & Pages → Create → Pages → Connect to Git** → 저장소를 선택합니다.
-2. 빌드 설정:
-   - Framework preset: `Astro`
+### 3. Cloudflare (Workers 방식)
+1. Cloudflare 대시보드 → **Workers & Pages → Create → Import a repository** → `sagong76/kpopupmap` 선택
+2. 설정 화면:
+   - Project name: `kpopupmap` (wrangler.jsonc 의 name 과 같아야 함)
    - Build command: `npm run build`
-   - Build output directory: `dist`
-   - 환경 변수: `SHEET_API_URL` = 1-5에서 복사한 URL, `NODE_VERSION` = `22`
-3. 배포가 끝나면 **Custom domains** 에서 `kpopupmap.com` 을 연결합니다.
-4. **Settings → Builds → Deploy hooks** 에서 훅을 만들고 URL을 복사합니다.
-5. 시트 메뉴 **⚙️ 배포 훅 URL 등록**에 붙여넣습니다.
-6. (선택) **⚙️ 매일 새벽 자동 배포 켜기**를 실행합니다. 종료된 팝업 정리 등이 매일 반영됩니다.
+   - Deploy command: `npx wrangler deploy` (기본값 그대로)
+   - Preview command: `npx wrangler versions upload` 또는 기본값 그대로
+   → **Deploy**
+3. 배포 후 프로젝트 → **Settings → Build → Variables and secrets** 에 추가:
+   - `SHEET_API_URL` = 1-5에서 복사한 URL
+   - `NODE_VERSION` = `22`
+4. **Settings → Domains & Routes → Add → Custom domain** 에서 `kpopupmap.com` 연결
+5. **Settings → Build → Deploy Hooks** 에서 훅 생성(브랜치 `main`) → URL 복사
+6. 시트 메뉴 **⚙️ 배포 훅 URL 등록** 에 붙여넣기
+7. (선택) **⚙️ 매일 새벽 자동 배포 켜기**
 
 ---
 
