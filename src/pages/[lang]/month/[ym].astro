@@ -1,0 +1,17 @@
+---
+import ListPage from '../../../components/ListPage.astro';
+import { LANGS, type Lang } from '../../../config';
+import { getPopups } from '../../../lib/data';
+import { L, monthLabel, monthsOf, inMonth } from '../../../lib/listing';
+export function getStaticPaths() {
+  const months = monthsOf(getPopups());
+  return LANGS.flatMap((lang) => months.map((ym) => ({ params: { lang, ym } })));
+}
+const lang = Astro.params.lang as Lang;
+const ym = Astro.params.ym!;
+const l = L[lang];
+const list = getPopups().filter((p) => inMonth(p, ym));
+const m = monthLabel(ym, lang);
+---
+<ListPage lang={lang} path={`/month/${ym}/`} title={l.monTitle(m)} desc={l.monDesc(m, list.length)}
+  h1={l.monH1(m)} intro={l.monDesc(m, list.length)} list={list} showEnded mapQuery={`?d=${ym}-01`} />

@@ -86,6 +86,7 @@
 | `AFFILIATES` | 언어별 제휴 링크 입력 (비어 있으면 숨김) |
 | `SOCIAL` | SNS 계정 URL |
 | `REGIONS` | 홍대·종로 오픈 시 `active: true` |
+| `SEARCH_VERIFY` | 구글 서치콘솔·네이버 서치어드바이저·Bing 소유확인 코드 |
 | `CF_ANALYTICS_TOKEN` | Cloudflare Web Analytics (무료) |
 
 ## 개발
@@ -99,6 +100,9 @@ npm run build    # dist/ 생성
 ## 주요 주소
 - `/ko/` `/ja/` `/en/` : 지도
 - `/{lang}/popup/{id}/` : 상세페이지 (구글 이벤트 구조화 데이터 포함)
+- `/{lang}/popups/` : 전체 목록 · `/{lang}/category/{key}/` : 카테고리별 · `/{lang}/month/{YYYY-MM}/` : 월별 (검색 유입용, 자동 생성)
+- `/{lang}/about/` : 사이트 소개 (애드센스 심사용)
+- `/ads.txt` : 애드센스 ID 입력 시 자동 생성
 - `/{lang}/guide/` : 안내 페이지 (`src/guides/{lang}/*.md` 파일을 추가하면 자동으로 생성)
 - `/data/popups.json` : 앱 연동용 전체 데이터
 - `/sitemap-index.xml` : 사이트맵

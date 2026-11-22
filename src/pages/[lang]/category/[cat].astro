@@ -1,0 +1,17 @@
+---
+import ListPage from '../../../components/ListPage.astro';
+import { LANGS, CATEGORIES, type Lang } from '../../../config';
+import { getPopups } from '../../../lib/data';
+import { L, monthLabel, today } from '../../../lib/listing';
+export function getStaticPaths() {
+  return LANGS.flatMap((lang) => CATEGORIES.map((c) => ({ params: { lang, cat: c.key } })));
+}
+const lang = Astro.params.lang as Lang;
+const c = CATEGORIES.find((x) => x.key === Astro.params.cat)!;
+const l = L[lang];
+const all = getPopups().filter((p) => p.category === c.key);
+const live = all.filter((p) => p.end >= today());
+const m = monthLabel(today().slice(0, 7), lang);
+---
+<ListPage lang={lang} path={`/category/${c.key}/`} title={l.catTitle(c[lang], m)} desc={l.catDesc(c[lang], live.length)}
+  h1={`${c.icon} ${l.catH1(c[lang])}`} intro={l.catDesc(c[lang], live.length)} list={all} showEnded mapQuery={`?d=all&c=${c.key}`} />

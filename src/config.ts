@@ -77,3 +77,9 @@ export const AFFILIATES: Record<Lang, { icon: string; title: string; desc: strin
 
 // Cloudflare Web Analytics (무료) 토큰 — 선택
 export const CF_ANALYTICS_TOKEN = '';
+
+// 검색엔진 소유 확인 — 각 서비스에서 받은 "content" 값만 넣으세요.
+//  구글 서치콘솔: <meta name="google-site-verification" content="여기">
+//  네이버 서치어드바이저: <meta name="naver-site-verification" content="여기">
+//  Bing 웹마스터: <meta name="msvalidate.01" content="여기">
+export const SEARCH_VERIFY = { google: '', naver: '', bing: '' };

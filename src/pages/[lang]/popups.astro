@@ -1,0 +1,12 @@
+---
+import ListPage from '../../components/ListPage.astro';
+import { LANGS, type Lang } from '../../config';
+import { getPopups } from '../../lib/data';
+import { L, monthLabel, today } from '../../lib/listing';
+export function getStaticPaths() { return LANGS.map((lang) => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+const l = L[lang];
+const list = getPopups().filter((p) => p.end >= today());
+const m = monthLabel(today().slice(0, 7), lang);
+---
+<ListPage lang={lang} path="/popups/" title={l.allTitle(m)} desc={l.allDesc} h1={l.allH1} intro={l.allDesc} list={list} />

@@ -1,0 +1,77 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from './AdSlot.astro';
+import Affiliates from './Affiliates.astro';
+import PopupGrid from './PopupGrid.astro';
+import { CATEGORIES, SITE, type Lang } from '../config';
+import { T } from '../i18n';
+import { getPopups, type Popup } from '../lib/data';
+import { L, statusOf, sortForList, monthsOf, monthLabel, today } from '../lib/listing';
+
+interface Props {
+  lang: Lang; path: string; title: string; desc: string; h1: string; intro?: string;
+  list: Popup[]; showEnded?: boolean; mapQuery?: string;
+}
+const { lang, path, title, desc, h1, intro, list, showEnded = false, mapQuery = '' } = Astro.props;
+const t = T[lang], l = L[lang];
+const d = today();
+const sorted = sortForList(list, d);
+const groups = (['open', 'upcoming', 'ended'] as const)
+  .map((s) => ({ s, items: sorted.filter((p) => statusOf(p, d) === s) }))
+  .filter((g) => g.items.length && (g.s !== 'ended' || showEnded));
+const all = getPopups();
+const live = all.filter((p) => p.end >= d);
+const cats = CATEGORIES.filter((c) => live.some((p) => p.category === c.key));
+const months = monthsOf(all);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: h1,
+  itemListElement: sorted.slice(0, 50).map((p, i) => ({
+    '@type': 'ListItem', position: i + 1, url: `${SITE.url}/${lang}/popup/${p.id}/`, name: p.name[lang],
+  })),
+};
+---
+<Base lang={lang} title={title} desc={desc} path={path} jsonLd={jsonLd} noindex={list.length === 0}>
+  <main class="page">
+    <div class="wrap wide">
+      <h1 class="title">{h1}</h1>
+      {intro && <p class="muted">{intro}</p>}
+      <p><a class="btn" href={`/${lang}/${mapQuery}`}>🗺️ {l.viewMap}</a></p>
+
+      <nav class="pills" aria-label={l.byCat}>
+        <a href={`/${lang}/popups/`} aria-current={path === '/popups/' ? 'page' : undefined}>{l.allCat}</a>
+        {cats.map((c) => (
+          <a href={`/${lang}/category/${c.key}/`} aria-current={path === `/category/${c.key}/` ? 'page' : undefined}>{c.icon} {c[lang]}</a>
+        ))}
+      </nav>
+
+      {groups.length === 0 && <p class="card muted">{l.empty}</p>}
+      {groups.map((g, i) => (
+        <section>
+          <h2 class="h2">{l[g.s]} <span class="count">{l.count(g.items.length)}</span></h2>
+          <PopupGrid lang={lang} list={g.items} />
+          {i === 0 && <AdSlot slot="list" label={t.ad} />}
+        </section>
+      ))}
+
+      <section class="card">
+        <h2 class="h3">📅 {l.byMonth}</h2>
+        <nav class="pills" style="margin:0">
+          {months.map((m) => (
+            <a href={`/${lang}/month/${m}/`} aria-current={path === `/month/${m}/` ? 'page' : undefined}>{monthLabel(m, lang)}</a>
+          ))}
+        </nav>
+      </section>
+      <Affiliates lang={lang} />
+    </div>
+  </main>
+  <script is:inline define:vars={{ S: { open: t.open, upcoming: t.upcoming, ended: t.ended, last: t.endsToday } }}>
+    var td = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+    document.querySelectorAll('[data-st]').forEach(function (el) {
+      var a = el.dataset.a, b = el.dataset.b;
+      var k = b < td ? 'ended' : a > td ? 'upcoming' : b === td ? 'last' : 'open';
+      el.className = 'badge ' + k; el.textContent = S[k];
+    });
+  </script>
+</Base>

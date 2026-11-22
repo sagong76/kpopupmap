@@ -1,5 +1,6 @@
 ---
-import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, type Lang } from '../config';
+import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, SEARCH_VERIFY, CATEGORIES, type Lang } from '../config';
+import { L } from '../lib/listing';
 import { T } from '../i18n';
 import '../styles/global.css';
 
@@ -11,8 +12,9 @@ interface Props {
   image?: string;
   jsonLd?: object;
   app?: boolean; // 지도 전체화면 레이아웃
+  noindex?: boolean;
 }
-const { lang, title, desc, path, image, jsonLd, app = false } = Astro.props;
+const { lang, title, desc, path, image, jsonLd, app = false, noindex = false } = Astro.props;
 const t = T[lang];
 const canonical = `${SITE.url}/${lang}${path}`;
 const ogImage = image || `${SITE.url}/og-default.png`;
@@ -26,6 +28,7 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
   <title>{title}</title>
   <meta name="description" content={desc} />
   <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, follow" />}
   {LANGS.map((l) => <link rel="alternate" hreflang={l} href={`${SITE.url}/${l}${path}`} />)}
   <link rel="alternate" hreflang="x-default" href={`${SITE.url}/en${path}`} />
   <meta property="og:type" content="website" />
@@ -36,6 +39,9 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
   <meta property="og:image" content={ogImage} />
   <meta property="og:locale" content={{ ko: 'ko_KR', ja: 'ja_JP', en: 'en_US' }[lang]} />
   <meta name="twitter:card" content="summary_large_image" />
+  {SEARCH_VERIFY.google && <meta name="google-site-verification" content={SEARCH_VERIFY.google} />}
+  {SEARCH_VERIFY.naver && <meta name="naver-site-verification" content={SEARCH_VERIFY.naver} />}
+  {SEARCH_VERIFY.bing && <meta name="msvalidate.01" content={SEARCH_VERIFY.bing} />}
   <meta name="theme-color" content="#ff4f7b" />
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -53,6 +59,7 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
     </a>
     <nav class="nav">
       <a href={`/${lang}/`} aria-current={path === '/' ? 'page' : undefined}>{t.map}</a>
+      <a href={`/${lang}/popups/`} aria-current={path.startsWith('/popups') || path.startsWith('/category') || path.startsWith('/month') ? 'page' : undefined}>{L[lang].allNav}</a>
       <a href={`/${lang}/guide/`} aria-current={path.startsWith('/guide') ? 'page' : undefined}>{t.guide}</a>
       <a href={`/${lang}/feedback/`} class="hide-sm" aria-current={path.startsWith('/feedback') ? 'page' : undefined}>{t.feedback}</a>
     </nav>
@@ -74,8 +81,13 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
         {socials.length > 0 && (
           <p class="socials">{socials.map(([k, v]) => <a href={v} rel="noopener" target="_blank">{k}</a>)}</p>
         )}
+        <p class="foot-cats">
+          {CATEGORIES.map((c) => <a href={`/${lang}/category/${c.key}/`}>{c[lang]}</a>)}
+        </p>
         <p>
+          <a href={`/${lang}/popups/`}>{L[lang].allNav}</a> ·
           <a href={`/${lang}/guide/`}>{t.guide}</a> ·
+          <a href={`/${lang}/about/`}>{L[lang].about}</a> ·
           <a href={`/${lang}/feedback/`}>{t.feedback}</a> ·
           <a href={`/${lang}/privacy/`}>{t.privacy}</a>
         </p>
