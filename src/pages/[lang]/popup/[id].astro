@@ -1,0 +1,183 @@
+---
+import Base from '../../../layouts/Base.astro';
+import AdSlot from '../../../components/AdSlot.astro';
+import Affiliates from '../../../components/Affiliates.astro';
+import { LANGS, CATEGORIES, REGIONS, FORMS, SITE, type Lang } from '../../../config';
+import { T } from '../../../i18n';
+import { getPopups, type Popup } from '../../../lib/data';
+
+export function getStaticPaths() {
+  const all = getPopups();
+  return LANGS.flatMap((lang) => all.map((p) => ({ params: { lang, id: p.id }, props: { p } })));
+}
+const lang = Astro.params.lang as Lang;
+const { p } = Astro.props as { p: Popup };
+const t = T[lang];
+const cat = CATEGORIES.find((c) => c.key === p.category)!;
+const region = REGIONS.find((r) => r.key === p.region);
+const regionName = region ? region[lang] : p.region;
+const name = p.name[lang];
+const address = p.address[lang] || p.address.ko;
+const station = p.station[lang];
+
+const dateFmt = (s: string) =>
+  new Date(s + 'T00:00:00+09:00').toLocaleDateString({ ko: 'ko-KR', ja: 'ja-JP', en: 'en-US' }[lang], { timeZone: 'Asia/Seoul', year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+const periodText = p.start === p.end ? dateFmt(p.start) : `${dateFmt(p.start)} ~ ${dateFmt(p.end)}`;
+
+const title = { ko: `${name} - 성수 팝업스토어 기간·예약·위치`, ja: `${name} - 聖水ポップアップ 期間・予約・場所`, en: `${name} - Seongsu Pop-up: Dates, Booking & Location` }[lang];
+const desc = `${periodText} · ${regionName} · ${cat[lang]}. ${p.desc[lang]}`.slice(0, 155);
+
+const q = encodeURIComponent(p.address.ko || `${p.name.ko} ${region?.ko ?? ''}`);
+const maps = [
+  { n: { ko: '네이버지도', ja: 'NAVER Map', en: 'Naver Map' }[lang], u: `https://map.naver.com/p/search/${q}` },
+  { n: { ko: '카카오맵', ja: 'カカオマップ', en: 'Kakao Map' }[lang], u: `https://map.kakao.com/link/to/${encodeURIComponent(p.name.ko)},${p.lat},${p.lng}` },
+  { n: 'Google Maps', u: `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}` },
+];
+
+// 근처 팝업 (종료되지 않은 것, 거리순)
+const buildDay = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+const dist = (a: Popup) => Math.hypot(a.lat - p.lat, (a.lng - p.lng) * Math.cos((p.lat * Math.PI) / 180));
+const nearby = getPopups()
+  .filter((x) => x.id !== p.id && x.region === p.region && x.end >= buildDay)
+  .sort((a, b) => dist(a) - dist(b))
+  .slice(0, 4);
+
+const showResvLink = p.reservationUrl && p.reservation !== 'none';
+const foreignTip = lang !== 'ko' && ['naver', 'catchtable', 'tabling'].includes(p.method) && p.foreigner !== 'yes';
+const reportUrl = FORMS.report ? `${FORMS.report}${FORMS.report.includes('?') ? '&' : '?'}popup=${p.id}` : `/${lang}/feedback/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Event',
+  name,
+  startDate: `${p.start}T${(p.hours.match(/(\d{1,2}):(\d{2})/)?.[0] ?? '00:00').padStart(5, '0')}+09:00`,
+  endDate: `${p.end}T23:59+09:00`,
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+  description: p.desc[lang] || desc,
+  image: p.image ? [p.image] : [`${SITE.url}/og-default.png`],
+  url: `${SITE.url}/${lang}/popup/${p.id}/`,
+  inLanguage: lang,
+  location: {
+    '@type': 'Place',
+    name: `${name} (${regionName})`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: p.address.en || p.address.ko || `${region?.en ?? ''}-dong`,
+      addressLocality: 'Seongdong-gu, Seoul',
+      addressCountry: 'KR',
+    },
+    geo: { '@type': 'GeoCoordinates', latitude: p.lat, longitude: p.lng },
+  },
+  organizer: { '@type': 'Organization', name: p.name.en || p.name.ko, url: p.homepage || (p.instagram ? `https://instagram.com/${p.instagram}` : SITE.url) },
+  ...(p.reservationUrl ? { offers: { '@type': 'Offer', url: p.reservationUrl, availability: 'https://schema.org/InStock', price: '0', priceCurrency: 'KRW', validFrom: `${p.start}T00:00+09:00` } } : {}),
+};
+---
+<Base lang={lang} title={title} desc={desc} path={`/popup/${p.id}/`} image={p.image || undefined} jsonLd={jsonLd}>
+  <main class="page">
+    <div class="wrap">
+      <p class="crumb"><a href={`/${lang}/#p=${p.id}`}>← {t.back}</a></p>
+
+      <div class="hero" style={`background:${cat.color}1f`}>
+        {p.image ? <img src={p.image} alt={name} width="860" height="645" fetchpriority="high" /> : <span>{cat.icon}</span>}
+      </div>
+
+      <section class="card">
+        <div class="badges">
+          <span class="badge" id="st" data-a={p.start} data-b={p.end}></span>
+          {p.sponsored && <span class="badge sp">★ {t.sponsored}</span>}
+          <span class="cat">{cat.icon} {cat[lang]}</span>
+          <span class="cat">📍 {regionName}</span>
+        </div>
+        <h1 class="title">{name}</h1>
+        {p.desc[lang] && <p class="desc">{p.desc[lang]}</p>}
+        <div class="btnrow">
+          {p.instagram && <a class="btn dark" href={`https://instagram.com/${p.instagram}`} target="_blank" rel="noopener">📷 @{p.instagram}</a>}
+          {p.homepage && <a class="btn" href={p.homepage} target="_blank" rel="noopener">🌐 {t.homepage}</a>}
+        </div>
+      </section>
+
+      <section class="card">
+        <dl class="info">
+          <dt>{t.period}</dt><dd>{periodText}</dd>
+          {p.hours && <><dt>{t.hours}</dt><dd>{p.hours}</dd></>}
+          {address && <><dt>{t.address}</dt><dd>{address} <button class="linkbtn" data-copy={p.address.ko || address} data-done={t.copied}>{t.copy}</button>
+            {lang !== 'ko' && p.address.ko && <><br /><small class="muted">{p.address.ko}</small></>}</dd></>}
+          {station && <><dt>{t.station}</dt><dd>🚇 {station}</dd></>}
+        </dl>
+        <div class="btnrow">
+          {maps.map((m) => <a class="btn" href={m.u} target="_blank" rel="noopener">🧭 {m.n}</a>)}
+        </div>
+        <div class="btnrow">
+          <a class="btn" href={`/${lang}/#p=${p.id}`}>🗺️ {t.map}</a>
+          <button class="btn" id="ics" data-name={name} data-a={p.start} data-b={p.end} data-loc={address || regionName}>🗓️ {t.addCal}</button>
+          <button class="btn" id="share" data-title={name}>🔗 {t.share}</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="h3">🎟️ {t.reservation}</h2>
+        <div class="resv-box">
+          <div class="resv-line"><span class="k">📋</span><span>{t.resv[p.reservation]}</span></div>
+          <div class="resv-line"><span class="k">🌏</span><span>{t.foreign[p.foreigner]}</span></div>
+          {p.method !== 'none' && <div class="resv-line"><span class="k">📱</span><span>{t.method[p.method]}</span></div>}
+        </div>
+        {showResvLink && <div class="btnrow"><a class="btn pri" href={p.reservationUrl} target="_blank" rel="noopener">{t.reserveBtn} →</a></div>}
+        {foreignTip && <p class="tip">💡 {t.foreignTip} <a href={`/${lang}/guide/reservation-tips/`}>{t.guide} →</a></p>}
+      </section>
+
+      <AdSlot slot="detail" label={t.ad} />
+      <Affiliates lang={lang} />
+
+      {nearby.length > 0 && (
+        <section class="card">
+          <h2 class="h3">{t.nearby}</h2>
+          <ul class="near list">
+            {nearby.map((n) => {
+              const c = CATEGORIES.find((x) => x.key === n.category)!;
+              return (
+                <li><a class="item" href={`/${lang}/popup/${n.id}/`}>
+                  {n.image ? <img class="thumb" src={n.image} alt="" loading="lazy" width="62" height="62" /> : <span class="thumb" style={`background:${c.color}1f`}>{c.icon}</span>}
+                  <div><div class="item-name">{n.name[lang]}</div><div class="item-meta">{n.start.slice(5).replace('-', '/')} – {n.end.slice(5).replace('-', '/')} · {c[lang]}</div></div>
+                </a></li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      <p class="muted" style="font-size:.85rem;text-align:center">
+        <a href={reportUrl} target={FORMS.report ? '_blank' : undefined} rel="noopener">⚠️ {t.report}</a>
+      </p>
+    </div>
+  </main>
+
+  <script is:inline define:vars={{ L: { open: t.open, upcoming: t.upcoming, ended: t.ended, last: t.endsToday } }}>
+    var today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+    var st = document.getElementById('st'), a = st.dataset.a, b = st.dataset.b;
+    var k = b < today ? 'ended' : a > today ? 'upcoming' : b === today ? 'last' : 'open';
+    st.className = 'badge ' + k; st.textContent = L[k];
+    document.querySelectorAll('[data-copy]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        navigator.clipboard && navigator.clipboard.writeText(el.dataset.copy).then(function () { el.textContent = el.dataset.done; });
+      });
+    });
+    document.getElementById('share').addEventListener('click', function (e) {
+      var d = { title: e.currentTarget.dataset.title, url: location.href };
+      if (navigator.share) navigator.share(d).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(function () { e.target.textContent = '✓'; });
+    });
+    document.getElementById('ics').addEventListener('click', function (e) {
+      var d = e.currentTarget.dataset, f = function (s) { return s.replace(/-/g, ''); };
+      var end = new Date(d.b + 'T00:00:00Z'); end.setUTCDate(end.getUTCDate() + 1);
+      var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//kpopupmap//EN', 'BEGIN:VEVENT',
+        'UID:' + d.a + '-' + Math.random().toString(36).slice(2) + '@kpopupmap.com',
+        'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z',
+        'DTSTART;VALUE=DATE:' + f(d.a), 'DTEND;VALUE=DATE:' + end.toISOString().slice(0, 10).replace(/-/g, ''),
+        'SUMMARY:' + d.name, 'LOCATION:' + d.loc, 'URL:' + location.href, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+      a.download = 'popup.ics'; a.click();
+    });
+  </script>
+</Base>

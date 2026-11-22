@@ -1,0 +1,99 @@
+---
+import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, type Lang } from '../config';
+import { T } from '../i18n';
+import '../styles/global.css';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  desc: string;
+  path: string; // 언어 뒤 경로. 예: '/', '/popup/abc/'
+  image?: string;
+  jsonLd?: object;
+  app?: boolean; // 지도 전체화면 레이아웃
+}
+const { lang, title, desc, path, image, jsonLd, app = false } = Astro.props;
+const t = T[lang];
+const canonical = `${SITE.url}/${lang}${path}`;
+const ogImage = image || `${SITE.url}/og-default.png`;
+const socials = Object.entries(SOCIAL).filter(([, v]) => v);
+---
+<!doctype html>
+<html lang={t.htmlLang}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={desc} />
+  <link rel="canonical" href={canonical} />
+  {LANGS.map((l) => <link rel="alternate" hreflang={l} href={`${SITE.url}/${l}${path}`} />)}
+  <link rel="alternate" hreflang="x-default" href={`${SITE.url}/en${path}`} />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content={SITE.name} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={desc} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:locale" content={{ ko: 'ko_KR', ja: 'ja_JP', en: 'en_US' }[lang]} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#ff4f7b" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="manifest" href={`/manifest-${lang}.webmanifest`} />
+  {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+  {ADSENSE.client && (
+    <script is:inline defer src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE.client}`} crossorigin="anonymous"></script>
+  )}
+  <slot name="head" />
+</head>
+<body class={app ? 'is-app' : ''}>
+  <header class="topbar">
+    <a class="brand" href={`/${lang}/`} aria-label={SITE.name}>
+      <span class="brand-pin">📍</span><span class="brand-name">K-Popup<b>Map</b></span>
+    </a>
+    <nav class="nav">
+      <a href={`/${lang}/`} aria-current={path === '/' ? 'page' : undefined}>{t.map}</a>
+      <a href={`/${lang}/guide/`} aria-current={path.startsWith('/guide') ? 'page' : undefined}>{t.guide}</a>
+      <a href={`/${lang}/feedback/`} class="hide-sm" aria-current={path.startsWith('/feedback') ? 'page' : undefined}>{t.feedback}</a>
+    </nav>
+    <div class="langs" role="group" aria-label="Language">
+      {LANGS.map((l) => (
+        <a href={`/${l}${path}`} hreflang={l} lang={l} class:list={[{ on: l === lang }]} data-lang-link={l}>
+          {l === 'ko' ? '한' : l === 'ja' ? '日' : 'EN'}
+        </a>
+      ))}
+    </div>
+  </header>
+
+  <slot />
+
+  {!app && (
+    <footer class="footer">
+      <div class="wrap">
+        <p><b>{SITE.name}</b> · {t.tagline}</p>
+        {socials.length > 0 && (
+          <p class="socials">{socials.map(([k, v]) => <a href={v} rel="noopener" target="_blank">{k}</a>)}</p>
+        )}
+        <p>
+          <a href={`/${lang}/guide/`}>{t.guide}</a> ·
+          <a href={`/${lang}/feedback/`}>{t.feedback}</a> ·
+          <a href={`/${lang}/privacy/`}>{t.privacy}</a>
+        </p>
+        <p class="muted">© {new Date().getFullYear()} {SITE.name}</p>
+      </div>
+    </footer>
+  )}
+
+  <script is:inline>
+    // 언어 선택 기억 + 서비스워커(오프라인·앱 설치)
+    document.querySelectorAll('[data-lang-link]').forEach((a) =>
+      a.addEventListener('click', () => { try { localStorage.setItem('lang', a.dataset.langLink); } catch (e) {} }));
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+      addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
+  </script>
+  {CF_ANALYTICS_TOKEN && (
+    <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}></script>
+  )}
+</body>
+</html>

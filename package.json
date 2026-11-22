@@ -1,0 +1,17 @@
+{
+  "name": "kpopupmap",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-data": "node scripts/fetch-sheet.mjs",
+    "dev": "astro dev",
+    "build": "node scripts/fetch-sheet.mjs && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.6",
+    "astro": "^5.18.2",
+    "maplibre-gl": "^5.24.1"
+  }
+}

@@ -1,0 +1,43 @@
+---
+import Base from '../../layouts/Base.astro';
+import { LANGS, SITE, CONTACT_EMAIL, type Lang } from '../../config';
+import { T } from '../../i18n';
+export function getStaticPaths() { return LANGS.map((lang) => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+const t = T[lang];
+const body = {
+  ko: [
+    `${SITE.name}(이하 "사이트")는 회원가입 없이 이용할 수 있으며, 이름·연락처 등 개인정보를 직접 수집하지 않습니다.`,
+    '사이트는 Google AdSense 광고를 게재할 수 있습니다. Google 등 제3자 공급업체는 쿠키를 사용해 이용자의 이전 방문 기록을 바탕으로 광고를 제공합니다. 이용자는 Google 광고 설정(adssettings.google.com)에서 맞춤 광고를 해제할 수 있습니다.',
+    '사이트에는 제휴(어필리에이트) 링크가 포함될 수 있으며, 이를 통해 구매가 이루어지면 사이트가 수수료를 받을 수 있습니다. 이용자에게 추가 비용은 없습니다.',
+    '방문 통계를 위해 쿠키를 사용하지 않는 분석 도구(Cloudflare Web Analytics)를 사용할 수 있습니다.',
+    '찜하기·언어 설정은 이용자의 브라우저(localStorage)에만 저장되며 서버로 전송되지 않습니다.',
+    '팝업 정보는 공개된 자료를 바탕으로 정리한 것으로 실제와 다를 수 있습니다. 방문 전 공식 채널을 확인하세요.',
+  ],
+  ja: [
+    `${SITE.name}(以下「本サイト」)は会員登録なしで利用でき、氏名・連絡先などの個人情報を直接収集しません。`,
+    '本サイトはGoogle AdSense広告を掲載する場合があります。Googleなどの第三者配信事業者はCookieを使用して、ユーザーの過去のアクセス情報に基づいて広告を配信します。パーソナライズ広告は Google 広告設定(adssettings.google.com)で無効にできます。',
+    '本サイトにはアフィリエイトリンクが含まれる場合があり、リンク経由で購入された場合に本サイトが報酬を受け取ることがあります。ユーザーに追加費用は発生しません。',
+    'アクセス解析にはCookieを使用しない解析ツール(Cloudflare Web Analytics)を使用する場合があります。',
+    '言語設定などはお使いのブラウザ(localStorage)にのみ保存され、サーバーには送信されません。',
+    'ポップアップ情報は公開情報をもとに整理したもので、実際と異なる場合があります。訪問前に公式チャンネルをご確認ください。',
+  ],
+  en: [
+    `${SITE.name} ("the Site") can be used without an account and does not directly collect personal information such as names or contact details.`,
+    'The Site may display Google AdSense ads. Third-party vendors, including Google, use cookies to serve ads based on prior visits. You can opt out of personalized advertising at Google Ads Settings (adssettings.google.com).',
+    'The Site may contain affiliate links. If you make a purchase through them, the Site may earn a commission at no extra cost to you.',
+    'The Site may use a cookie-free analytics tool (Cloudflare Web Analytics) for visit statistics.',
+    'Preferences such as language are stored only in your browser (localStorage) and are never sent to a server.',
+    'Pop-up information is compiled from public sources and may differ from reality. Please check official channels before visiting.',
+  ],
+}[lang];
+---
+<Base lang={lang} title={`${t.privacy} | ${SITE.name}`} desc={t.privacy} path="/privacy/">
+  <main class="page"><div class="wrap">
+    <article class="card prose">
+      <h1 class="title">{t.privacy}</h1>
+      <ol>{body.map((b) => <li>{b}</li>)}</ol>
+      {CONTACT_EMAIL && <p>✉️ {CONTACT_EMAIL}</p>}
+    </article>
+  </div></main>
+</Base>

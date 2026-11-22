@@ -1,0 +1,24 @@
+---
+import Base from '../../layouts/Base.astro';
+import { LANGS, FORMS, CONTACT_EMAIL, type Lang } from '../../config';
+import { T } from '../../i18n';
+export function getStaticPaths() { return LANGS.map((lang) => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+const t = T[lang];
+const icons = { feedback: '💬', report: '📍', business: '🤝' } as const;
+const forms = (Object.keys(FORMS) as (keyof typeof FORMS)[]).filter((k) => FORMS[k]);
+---
+<Base lang={lang} title={`${t.feedbackTitle} | K-Popup Map`} desc={t.feedbackTitle} path="/feedback/">
+  <main class="page"><div class="wrap">
+    <h1 class="title">{t.feedbackTitle}</h1>
+    <div class="forms">
+      {forms.map((k) => (
+        <a class="card" href={FORMS[k]} target="_blank" rel="noopener">
+          <b>{icons[k]} {t.feedbackForms[k][0]}</b><small>{t.feedbackForms[k][1]}</small>
+        </a>
+      ))}
+      {CONTACT_EMAIL && <a class="card" href={`mailto:${CONTACT_EMAIL}`}><b>✉️ {CONTACT_EMAIL}</b></a>}
+      {forms.length === 0 && !CONTACT_EMAIL && <p class="card muted">{t.formsSoon}</p>}
+    </div>
+  </div></main>
+</Base>

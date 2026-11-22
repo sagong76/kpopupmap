@@ -1,0 +1,19 @@
+---
+import { AFFILIATES, type Lang } from '../config';
+import { T } from '../i18n';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const items = AFFILIATES[lang].filter((a) => a.url);
+---
+{items.length > 0 && (
+  <section class="card aff">
+    <h2 class="h3">{T[lang].partnerTitle}</h2>
+    <ul>
+      {items.map((a) => (
+        <li><a href={a.url} target="_blank" rel="sponsored noopener">
+          <span class="aff-ic">{a.icon}</span><span><b>{a.title}</b><small>{a.desc}</small></span><span aria-hidden="true">›</span>
+        </a></li>
+      ))}
+    </ul>
+  </section>
+)}

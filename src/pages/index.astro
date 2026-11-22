@@ -1,0 +1,33 @@
+---
+import { SITE } from '../config';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>K-Popup Map · 성수 팝업스토어 지도 · 聖水ポップアップマップ</title>
+  <meta name="description" content="Seongsu popup store map in Korean, Japanese and English." />
+  <link rel="alternate" hreflang="ko" href={`${SITE.url}/ko/`} />
+  <link rel="alternate" hreflang="ja" href={`${SITE.url}/ja/`} />
+  <link rel="alternate" hreflang="en" href={`${SITE.url}/en/`} />
+  <link rel="alternate" hreflang="x-default" href={`${SITE.url}/en/`} />
+  <script is:inline>
+    (function () {
+      var l = null;
+      try { l = localStorage.getItem('lang'); } catch (e) {}
+      if (!l) {
+        var n = (navigator.languages || [navigator.language || 'en']).join(',').toLowerCase();
+        l = /(^|,)ko/.test(n) ? 'ko' : /(^|,)ja/.test(n) ? 'ja' : 'en';
+        var first = (navigator.languages && navigator.languages[0] || navigator.language || '').toLowerCase();
+        if (first.indexOf('ko') === 0) l = 'ko'; else if (first.indexOf('ja') === 0) l = 'ja';
+      }
+      location.replace('/' + l + '/' + location.search + location.hash);
+    })();
+  </script>
+  <style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;margin:0}a{display:block;margin:8px;font-size:1.2rem}</style>
+</head>
+<body>
+  <nav><a href="/ko/">한국어</a><a href="/ja/">日本語</a><a href="/en/">English</a></nav>
+</body>
+</html>

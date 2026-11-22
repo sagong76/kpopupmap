@@ -1,0 +1,28 @@
+---
+import Base from '../../../layouts/Base.astro';
+import AdSlot from '../../../components/AdSlot.astro';
+import Affiliates from '../../../components/Affiliates.astro';
+import { LANGS, type Lang } from '../../../config';
+import { T } from '../../../i18n';
+import { getGuides } from '../../../lib/guides';
+
+export function getStaticPaths() { return LANGS.map((lang) => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+const t = T[lang];
+const guides = getGuides(lang);
+---
+<Base lang={lang} title={`${t.guideTitle} | K-Popup Map`} desc={t.guideDesc} path="/guide/">
+  <main class="page"><div class="wrap">
+    <h1 class="title">{t.guideTitle}</h1>
+    <p class="muted">{t.guideDesc}</p>
+    <ul class="glist">
+      {guides.map((g) => (
+        <li class="card"><a href={`/${lang}/guide/${g.slug}/`}>
+          <span class="gi">{g.icon}</span><span><b>{g.title}</b><p>{g.desc}</p></span>
+        </a></li>
+      ))}
+    </ul>
+    <AdSlot slot="guide" label={t.ad} />
+    <Affiliates lang={lang} />
+  </div></main>
+</Base>

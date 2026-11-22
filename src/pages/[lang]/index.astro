@@ -1,0 +1,99 @@
+---
+import Base from '../../layouts/Base.astro';
+import { LANGS, CATEGORIES, REGIONS, MAP_STYLE, SITE, type Lang } from '../../config';
+import { T } from '../../i18n';
+import { clientPopups } from '../../lib/data';
+
+export function getStaticPaths() {
+  return LANGS.map((lang) => ({ params: { lang } }));
+}
+const lang = Astro.params.lang as Lang;
+const t = T[lang];
+const popups = clientPopups(lang);
+const boot = {
+  lang,
+  style: MAP_STYLE,
+  popups,
+  cats: CATEGORIES.map((c) => ({ k: c.key, n: c[lang], col: c.color, ic: c.icon })),
+  regions: REGIONS.map((r) => ({ k: r.key, n: r[lang], c: r.center, z: r.zoom, on: r.active })),
+  t: {
+    detail: t.detail, open: t.open, upcoming: t.upcoming, ended: t.ended, endsToday: t.endsToday,
+    noResults: t.noResults, results: t.results(0).replace('0', '{n}'),
+    resv: t.resv, foreign: t.foreign, sp: t.sponsored, months: lang,
+  },
+};
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  url: `${SITE.url}/${lang}/`,
+  inLanguage: lang,
+  description: t.metaDesc,
+};
+const dows = { ko: ['일', '월', '화', '수', '목', '금', '토'], ja: ['日', '月', '火', '水', '木', '金', '土'], en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] }[lang];
+---
+<Base lang={lang} title={t.metaTitle} desc={t.metaDesc} path="/" jsonLd={jsonLd} app>
+  <link slot="head" rel="preconnect" href="https://tiles.openfreemap.org" crossorigin />
+  <main class="app">
+    <aside class="panel" id="panel" data-tab="cal" aria-label={t.calendar}>
+      <button class="panel-handle" id="handle" aria-label={t.sheetHandle}></button>
+      <div class="tabs" role="tablist">
+        <button data-tab-btn="cal" class="on" role="tab">📅 {t.calendar}</button>
+        <button data-tab-btn="cat" role="tab">🏷️ {t.category}</button>
+        <button data-tab-btn="list" role="tab">📋 {t.list} <span id="tabCount"></span></button>
+      </div>
+      <div class="panel-top">
+        <div class="regions" id="regions">
+          {REGIONS.map((r, i) => (
+            <button data-region={r.key} class:list={[{ on: i === 0 }]} disabled={!r.active}>
+              {r[lang]}{!r.active && <small>{t.regionSoon}</small>}
+            </button>
+          ))}
+        </div>
+        <div class="sec" style="border-bottom:0;padding-bottom:4px">
+          <div class="quick" id="quick">
+            <button data-q="today" class="on">{t.today}</button>
+            <button data-q="weekend">{t.weekend}</button>
+            <button data-q="all">{t.all}</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <section class="sec" data-sec="cal">
+          <div class="cal-head">
+            <button id="calPrev" aria-label="prev">‹</button>
+            <b id="calTitle"></b>
+            <button id="calNext" aria-label="next">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid">
+            {dows.map((d) => <span class="dow">{d}</span>)}
+          </div>
+        </section>
+        <section class="sec" data-sec="cat">
+          <h2 class="sec-title">{t.category}
+            <span><button class="linkbtn" id="catAll">{t.allOn}</button> · <button class="linkbtn" id="catNone">{t.allOff}</button></span>
+          </h2>
+          <div class="cats" id="cats">
+            {CATEGORIES.map((c) => (
+              <button class="chip on" data-cat={c.key} style={`--c:${c.color}`} aria-pressed="true">
+                <span class="sw"></span>{c.icon} {c[lang]} <span class="n" data-n={c.key}></span>
+              </button>
+            ))}
+          </div>
+        </section>
+        <section class="sec" data-sec="list">
+          <h2 class="sec-title">{t.list} <span class="count" id="count"></span></h2>
+          <ul class="list" id="list"></ul>
+        </section>
+      </div>
+    </aside>
+    <div id="map" role="region" aria-label={t.map}></div>
+    <noscript>
+      <ul>{popups.map((p) => <li><a href={`/${lang}/popup/${p.id}/`}>{p.n}</a> ({p.a} ~ {p.b})</li>)}</ul>
+    </noscript>
+  </main>
+  <script type="application/json" id="boot" set:html={JSON.stringify(boot)} />
+  <script>
+    import '../../client/map-app';
+  </script>
+</Base>
