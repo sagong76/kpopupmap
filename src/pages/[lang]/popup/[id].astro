@@ -44,7 +44,7 @@ const nearby = getPopups()
 
 const showResvLink = p.reservationUrl && p.reservation !== 'none';
 const foreignTip = lang !== 'ko' && ['naver', 'catchtable', 'tabling'].includes(p.method) && p.foreigner !== 'yes';
-const reportUrl = FORMS.report ? `${FORMS.report}${FORMS.report.includes('?') ? '&' : '?'}popup=${p.id}` : `/${lang}/feedback/`;
+const reportUrl = FORMS.report || `/${lang}/feedback/`;
 
 const jsonLd = {
   '@context': 'https://schema.org',

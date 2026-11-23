@@ -41,9 +41,9 @@ export const ADSENSE = {
 
 // 의견 수렴 — 구글 폼 링크를 넣으세요. 비어 있으면 버튼이 숨겨집니다.
 export const FORMS = {
-  feedback: '', // 사이트 의견
-  report: '', // 팝업 제보 / 정보 오류 신고
-  business: '', // 브랜드 입점·광고 문의
+  feedback: 'https://forms.gle/CvZMuqFaWebc6iHj8', // 사이트 의견
+  report: 'https://forms.gle/DP1NWmHYjGy2Hr4z6', // 팝업 제보 / 정보 오류 신고
+  business: 'https://forms.gle/KaFznmtQYHEsjBX17', // 브랜드 입점·광고 문의
 };
 export const CONTACT_EMAIL = 'thekspoon@gmail.com';
 
