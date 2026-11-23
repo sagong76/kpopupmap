@@ -1,5 +1,5 @@
 ---
-import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, SEARCH_VERIFY, CATEGORIES, type Lang } from '../config';
+import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, SEARCH_VERIFY, SOCIAL_LABEL, CATEGORIES, type Lang } from '../config';
 import { L } from '../lib/listing';
 import { T } from '../i18n';
 import '../styles/global.css';
@@ -79,7 +79,7 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
       <div class="wrap">
         <p><b>{SITE.name}</b> · {t.tagline}</p>
         {socials.length > 0 && (
-          <p class="socials">{socials.map(([k, v]) => <a href={v} rel="noopener" target="_blank">{k}</a>)}</p>
+          <p class="socials">{socials.map(([k, v]) => <a href={v} rel="noopener me" target="_blank">{SOCIAL_LABEL[k] ?? k}</a>)}</p>
         )}
         <p class="foot-cats">
           {CATEGORIES.map((c) => <a href={`/${lang}/category/${c.key}/`}>{c[lang]}</a>)}

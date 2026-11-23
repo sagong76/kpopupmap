@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { LANGS, CATEGORIES, REGIONS, MAP_STYLE, SITE, type Lang } from '../../config';
+import { LANGS, CATEGORIES, REGIONS, MAP_STYLE, SITE, SOCIAL, type Lang } from '../../config';
 import { T } from '../../i18n';
 import { clientPopups } from '../../lib/data';
 
@@ -29,6 +29,13 @@ const jsonLd = {
   url: `${SITE.url}/${lang}/`,
   inLanguage: lang,
   description: t.metaDesc,
+  publisher: {
+    '@type': 'Organization',
+    name: SITE.name,
+    url: SITE.url,
+    logo: `${SITE.url}/icons/icon-512.png`,
+    sameAs: Object.values(SOCIAL).filter(Boolean),
+  },
 };
 const dows = { ko: ['일', '월', '화', '수', '목', '금', '토'], ja: ['日', '月', '火', '水', '木', '金', '土'], en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] }[lang];
 ---

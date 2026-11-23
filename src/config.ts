@@ -45,16 +45,19 @@ export const FORMS = {
   report: '', // 팝업 제보 / 정보 오류 신고
   business: '', // 브랜드 입점·광고 문의
 };
-export const CONTACT_EMAIL = '';
+export const CONTACT_EMAIL = 'thekspoon@gmail.com';
 
 // SNS 채널 — 계정을 만들면 URL을 넣으세요. 비어 있으면 숨김.
 export const SOCIAL = {
-  instagram: '',
-  x: '',
-  threads: '',
-  tiktok: '',
-  youtube: '',
+  instagram: 'https://www.instagram.com/kpopupmap',
+  x: 'https://x.com/kpopupmapjp',
+  threads: 'https://www.threads.com/@kpopupmap',
+  tiktok: 'https://www.tiktok.com/@kpopupmap',
+  youtube: 'https://www.youtube.com/@kpopupmap',
   line: '',
+};
+export const SOCIAL_LABEL: Record<string, string> = {
+  instagram: 'Instagram', x: 'X (日本語)', threads: 'Threads', tiktok: 'TikTok', youtube: 'YouTube', line: 'LINE',
 };
 
 // 어필리에이트 — 언어별로 다른 상품을 노출합니다. url이 빈 항목은 숨김.
@@ -82,4 +85,8 @@ export const CF_ANALYTICS_TOKEN = '';
 //  구글 서치콘솔: <meta name="google-site-verification" content="여기">
 //  네이버 서치어드바이저: <meta name="naver-site-verification" content="여기">
 //  Bing 웹마스터: <meta name="msvalidate.01" content="여기">
-export const SEARCH_VERIFY = { google: '', naver: '', bing: '' };
+export const SEARCH_VERIFY = {
+  google: 'OWH0WFML0KPOFbjbCQZJPC74lY0N3nkXH2u9l_BlXeY',
+  naver: '2ea859831a5373232c1469e4255c022914efcac4',
+  bing: '',
+};

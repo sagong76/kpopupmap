@@ -222,7 +222,7 @@ body.is-app { height: 100dvh; overflow: hidden; }
 .footer { padding: 28px 0 40px; font-size: .85rem; color: var(--ink2); border-top: 1px solid var(--line); background: #fff; }
 .footer p { margin: 4px 0; }
 .footer a { text-decoration: none; margin: 0 4px; }
-.socials a { text-transform: capitalize; }
+.socials a { font-weight: 600; }
 
 /* ── list pages (grid) ── */
 .wrap.wide { max-width: 1120px; }
