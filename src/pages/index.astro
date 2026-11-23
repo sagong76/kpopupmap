@@ -1,5 +1,5 @@
 ---
-import { SITE } from '../config';
+import { SITE, SEARCH_VERIFY } from '../config';
 ---
 <!doctype html>
 <html lang="en">
@@ -8,6 +8,9 @@ import { SITE } from '../config';
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>K-Popup Map · 성수 팝업스토어 지도 · 聖水ポップアップマップ</title>
   <meta name="description" content="Seongsu popup store map in Korean, Japanese and English." />
+  {SEARCH_VERIFY.google && <meta name="google-site-verification" content={SEARCH_VERIFY.google} />}
+  {SEARCH_VERIFY.naver && <meta name="naver-site-verification" content={SEARCH_VERIFY.naver} />}
+  {SEARCH_VERIFY.bing && <meta name="msvalidate.01" content={SEARCH_VERIFY.bing} />}
   <link rel="alternate" hreflang="ko" href={`${SITE.url}/ko/`} />
   <link rel="alternate" hreflang="ja" href={`${SITE.url}/ja/`} />
   <link rel="alternate" hreflang="en" href={`${SITE.url}/en/`} />
