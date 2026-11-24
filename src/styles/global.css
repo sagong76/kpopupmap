@@ -245,3 +245,10 @@ body.is-app { height: 100dvh; overflow: hidden; }
 .gbody .cat { margin-top: 4px; }
 .foot-cats a { color: var(--ink2); }
 @media (max-width: 640px) { .title { font-size: 1.3rem; } }
+.nav a.feat { color: var(--accent-d); font-weight: 700; }
+.nav a.feat[aria-current] { background: #fff0f3; }
+.gnote { position: absolute; left: 8px; bottom: 8px; background: rgba(29,33,41,.86); color: #fff; font-size: .74rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.lead { font-size: 1.02rem; color: var(--ink2); }
+.edition-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+.teaser { text-align: center; padding: 32px 18px; }
+.teaser .big { font-size: 2.6rem; margin: 0; }

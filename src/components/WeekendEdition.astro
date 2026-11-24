@@ -1,0 +1,74 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from './AdSlot.astro';
+import Affiliates from './Affiliates.astro';
+import PopupGrid from './PopupGrid.astro';
+import { SITE } from '../config';
+import { getPopups, isSponsored, type Popup } from '../lib/data';
+import { sortForList } from '../lib/listing';
+import { editionData, weekendLabel, mdShort } from '../lib/weekend';
+
+interface Props { sat: string; path: string; isCurrent: boolean; past: string[] }
+const { sat, path, isCurrent, past } = Astro.props;
+const e = editionData(sat, getPopups());
+const label = weekendLabel(sat);
+const sort = (l: Popup[]) => sortForList(l, 'ko', sat);
+const title = isCurrent
+  ? `이번 주말 성수 팝업스토어 ${e.on.length}곳 (${label}) - 마감 임박·신규 오픈 총정리`
+  : `${label} 주말 성수 팝업스토어 ${e.on.length}곳 총정리`;
+const desc = `${label} 주말 성수동에서 열리는 팝업스토어 ${e.on.length}곳. 이번 주말이 마지막인 팝업 ${e.last.length}곳, 새로 오픈한 팝업 ${e.fresh.length}곳과 웨이팅·예약 정보를 한눈에.`;
+const sponsored = e.on.filter((p) => isSponsored(p, 'ko'));
+const thuLabel = `${+e.thu.slice(5, 7)}월 ${+e.thu.slice(8, 10)}일(목)`;
+const jsonLd = {
+  '@context': 'https://schema.org', '@type': 'Article', headline: title, description: desc, inLanguage: 'ko',
+  datePublished: `${e.thu}T00:00:00+09:00`, url: `${SITE.url}/ko${path}`,
+  publisher: { '@type': 'Organization', name: SITE.name, logo: { '@type': 'ImageObject', url: `${SITE.url}/icons/icon-512.png` } },
+  about: e.on.slice(0, 20).map((p) => ({ '@type': 'Event', name: p.name.ko, url: `${SITE.url}/ko/popup/${p.id}/`, startDate: p.start, endDate: p.end })),
+};
+---
+<Base lang="ko" title={title} desc={desc} path={path} jsonLd={jsonLd} langPaths={{ ko: path }} fallbackPath="/popups/">
+  <main class="page"><div class="wrap wide">
+    <p class="crumb"><a href="/ko/weekend/">이번 주말 성수 팝업</a> · {thuLabel} 발행</p>
+    <h1 class="title">{isCurrent ? '이번 주말' : label} 성수 팝업 {e.on.length}곳 <span class="muted" style="font-size:.7em">({label})</span></h1>
+    <p class="lead">
+      {label} 주말 성수에서 만날 수 있는 팝업은 모두 <b>{e.on.length}곳</b>입니다.
+      {e.last.length > 0 && <>이번 주말이 마지막인 팝업이 <b>{e.last.length}곳</b>, </>}
+      {e.fresh.length > 0 && <>이번 주 새로 오픈한 팝업이 <b>{e.fresh.length}곳</b>이에요. </>}
+      인기 팝업은 토요일 오후 웨이팅이 길어지니 오픈 시간에 맞춰 가는 걸 추천해요.
+    </p>
+    <p class="btnrow" style="justify-content:flex-start">
+      <a class="btn pri" style="flex:0 1 auto" href={`/ko/?d=${sat}`}>🗺️ 지도에서 주말 팝업 보기</a>
+      <a class="btn" style="flex:0 1 auto" href="/ko/guide/weekend-waiting-tips/">⏱️ 웨이팅 줄이는 법</a>
+    </p>
+
+    {sponsored.length > 0 && <section><h2 class="h2">★ 에디터 추천</h2><PopupGrid lang="ko" list={sponsored} /></section>}
+    {e.last.length > 0 && (
+      <section><h2 class="h2">🔥 이번 주말이 마지막 <span class="count">{e.last.length}곳</span></h2>
+        <PopupGrid lang="ko" list={sort(e.last)} note={(p) => `${mdShort(p.end)} 종료`} /></section>
+    )}
+    {e.fresh.length > 0 && (
+      <section><h2 class="h2">✨ 이번 주 새로 오픈 <span class="count">{e.fresh.length}곳</span></h2>
+        <PopupGrid lang="ko" list={sort(e.fresh)} note={(p) => `${mdShort(p.start)} 오픈`} /></section>
+    )}
+    <AdSlot slot="list" label="광고" />
+    {e.ongoing.length > 0 && (
+      <section><h2 class="h2">📍 계속 운영 중 <span class="count">{e.ongoing.length}곳</span></h2>
+        <PopupGrid lang="ko" list={sort(e.ongoing)} note={(p) => `~${mdShort(p.end)}`} /></section>
+    )}
+    {e.on.length === 0 && <p class="card muted">이번 주말 등록된 팝업이 없습니다.</p>}
+    {e.next.length > 0 && (
+      <section><h2 class="h2">👀 다음 주 오픈 예정 <span class="count">{e.next.length}곳</span></h2>
+        <PopupGrid lang="ko" list={sort(e.next)} note={(p) => `${mdShort(p.start)} 오픈`} /></section>
+    )}
+
+    {past.length > 0 && (
+      <section class="card" style="margin-top:24px">
+        <h2 class="h3">📚 지난 주말판</h2>
+        <nav class="pills" style="margin:0">
+          {[...past].reverse().map((s) => <a href={`/ko/weekend/${s}/`} aria-current={path === `/weekend/${s}/` ? 'page' : undefined}>{weekendLabel(s)}</a>)}
+        </nav>
+      </section>
+    )}
+    <Affiliates lang="ko" />
+  </div></main>
+</Base>

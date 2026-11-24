@@ -1,0 +1,20 @@
+---
+// 일본어 전용: 월별 K-POP 팝업 모음
+import ListPage from '../../../components/ListPage.astro';
+import { getPopups } from '../../../lib/data';
+import { monthLabel, monthsOf, inMonth } from '../../../lib/listing';
+export function getStaticPaths() {
+  return monthsOf(getPopups().filter((p) => p.category === 'kpop')).map((ym) => ({ params: { ym } }));
+}
+const ym = Astro.params.ym!;
+const kpop = getPopups().filter((p) => p.category === 'kpop');
+const list = kpop.filter((p) => inMonth(p, ym));
+const m = monthLabel(ym, 'ja');
+---
+<ListPage lang="ja" path={`/kpop/${ym}/`} langPaths={{ ja: `/kpop/${ym}/` }} fallbackPath={`/month/${ym}/`}
+  title={`【${m}】ソウル K-POPポップアップまとめ｜聖水(ソンス)・渡韓スケジュール`}
+  desc={`${m}にソウル・聖水で開催されるK-POPポップアップストア${list.length}件の日程、予約方法、外国人予約の可否まとめ。`}
+  h1={`🎤 ${m} ソウル K-POPポップアップまとめ`}
+  intro={`${m}に開催されるK-POPポップアップ ${list.length}件。渡韓の日程を決める前にチェック!`}
+  list={list} showEnded mapQuery={`?d=${ym}-01&c=kpop`} hidePills
+  monthLinks={{ base: '/kpop/', months: monthsOf(kpop), title: '月別 K-POPポップアップまとめ' }} />

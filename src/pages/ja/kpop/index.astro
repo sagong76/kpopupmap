@@ -1,0 +1,17 @@
+---
+// 일본어 전용: K-POP 팝업 모음 (허브)
+import ListPage from '../../../components/ListPage.astro';
+import { getPopups } from '../../../lib/data';
+import { monthLabel, monthsOf, today } from '../../../lib/listing';
+const kpop = getPopups().filter((p) => p.category === 'kpop');
+const live = kpop.filter((p) => p.end >= today());
+const m = monthLabel(today().slice(0, 7), 'ja');
+const months = monthsOf(kpop);
+---
+<ListPage lang="ja" path="/kpop/" langPaths={{ ja: '/kpop/' }} fallbackPath="/category/kpop/"
+  title={`ソウル・聖水(ソンス) K-POPポップアップまとめ【${m}最新】渡韓オタ活に`}
+  desc={`ソウル・聖水で開催中・開催予定のK-POPアイドル ポップアップストア${live.length}件。期間、予約方法、外国人予約の可否、行き方をまとめてチェック。渡韓前に。`}
+  h1="🎤 ソウル K-POPポップアップまとめ"
+  intro={`今行ける・これから始まるK-POPポップアップ ${live.length}件。外国人も予約できるかどうかを各ポップアップに表示しています。`}
+  list={live} mapQuery="?d=all&c=kpop" hidePills
+  monthLinks={{ base: '/kpop/', months, title: '月別 K-POPポップアップまとめ' }} />

@@ -1,5 +1,5 @@
 ---
-import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, SEARCH_VERIFY, SOCIAL_LABEL, CATEGORIES, type Lang } from '../config';
+import { SITE, LANGS, ADSENSE, CF_ANALYTICS_TOKEN, SOCIAL, SEARCH_VERIFY, SOCIAL_LABEL, LANG_PROFILE, catsFor, type Lang } from '../config';
 import { L } from '../lib/listing';
 import { T } from '../i18n';
 import '../styles/global.css';
@@ -13,12 +13,22 @@ interface Props {
   jsonLd?: object;
   app?: boolean; // 지도 전체화면 레이아웃
   noindex?: boolean;
+  /** 언어마다 경로가 다르거나 일부 언어에만 있는 페이지: { ko: '/weekend/' } 처럼 지정 */
+  langPaths?: Partial<Record<Lang, string>>;
+  /** langPaths에 없는 언어로 전환할 때 보낼 경로 (기본 '/') */
+  fallbackPath?: string;
+  canonicalPath?: string;
 }
-const { lang, title, desc, path, image, jsonLd, app = false, noindex = false } = Astro.props;
+const { lang, title, desc, path, image, jsonLd, app = false, noindex = false, langPaths, fallbackPath = '/', canonicalPath } = Astro.props;
 const t = T[lang];
-const canonical = `${SITE.url}/${lang}${path}`;
+const prof = LANG_PROFILE[lang];
+const canonical = `${SITE.url}/${lang}${canonicalPath ?? path}`;
 const ogImage = image || `${SITE.url}/og-default.png`;
-const socials = Object.entries(SOCIAL).filter(([, v]) => v);
+const socials = prof.socials.map((k) => [k, SOCIAL[k]] as const).filter(([, v]) => v);
+// 언어별 대응 페이지 (없는 언어는 hreflang 생략, 전환 버튼은 fallback)
+const alt: Partial<Record<Lang, string>> = langPaths ?? Object.fromEntries(LANGS.map((l) => [l, path]));
+const switchHref = (l: Lang) => `/${l}${alt[l] ?? fallbackPath}`;
+const xDefault = alt.en ? `/en${alt.en}` : `/${lang}${path}`;
 ---
 <!doctype html>
 <html lang={t.htmlLang}>
@@ -29,8 +39,8 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
   <meta name="description" content={desc} />
   <link rel="canonical" href={canonical} />
   {noindex && <meta name="robots" content="noindex, follow" />}
-  {LANGS.map((l) => <link rel="alternate" hreflang={l} href={`${SITE.url}/${l}${path}`} />)}
-  <link rel="alternate" hreflang="x-default" href={`${SITE.url}/en${path}`} />
+  {!noindex && LANGS.filter((l) => alt[l]).map((l) => <link rel="alternate" hreflang={l} href={`${SITE.url}/${l}${alt[l]}`} />)}
+  {!noindex && <link rel="alternate" hreflang="x-default" href={`${SITE.url}${xDefault}`} />}
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content={SITE.name} />
   <meta property="og:title" content={title} />
@@ -60,12 +70,13 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
     <nav class="nav">
       <a href={`/${lang}/`} aria-current={path === '/' ? 'page' : undefined}>{t.map}</a>
       <a href={`/${lang}/popups/`} aria-current={path.startsWith('/popups') || path.startsWith('/category') || path.startsWith('/month') ? 'page' : undefined}>{L[lang].allNav}</a>
+      <a href={`/${lang}${prof.feature.path}`} class="feat" aria-current={path.startsWith(prof.feature.path) ? 'page' : undefined}>{prof.feature.label}</a>
       <a href={`/${lang}/guide/`} aria-current={path.startsWith('/guide') ? 'page' : undefined}>{t.guide}</a>
       <a href={`/${lang}/feedback/`} class="hide-sm" aria-current={path.startsWith('/feedback') ? 'page' : undefined}>{t.feedback}</a>
     </nav>
     <div class="langs" role="group" aria-label="Language">
       {LANGS.map((l) => (
-        <a href={`/${l}${path}`} hreflang={l} lang={l} class:list={[{ on: l === lang }]} data-lang-link={l}>
+        <a href={switchHref(l)} hreflang={l} lang={l} class:list={[{ on: l === lang }]} data-lang-link={l}>
           {l === 'ko' ? '한' : l === 'ja' ? '日' : 'EN'}
         </a>
       ))}
@@ -82,10 +93,11 @@ const socials = Object.entries(SOCIAL).filter(([, v]) => v);
           <p class="socials">{socials.map(([k, v]) => <a href={v} rel="noopener me" target="_blank">{SOCIAL_LABEL[k] ?? k}</a>)}</p>
         )}
         <p class="foot-cats">
-          {CATEGORIES.map((c) => <a href={`/${lang}/category/${c.key}/`}>{c[lang]}</a>)}
+          {catsFor(lang).map((c) => <a href={`/${lang}/category/${c.key}/`}>{c[lang]}</a>)}
         </p>
         <p>
           <a href={`/${lang}/popups/`}>{L[lang].allNav}</a> ·
+          <a href={`/${lang}${prof.feature.path}`}>{prof.feature.label}</a> ·
           <a href={`/${lang}/guide/`}>{t.guide}</a> ·
           <a href={`/${lang}/about/`}>{L[lang].about}</a> ·
           <a href={`/${lang}/feedback/`}>{t.feedback}</a> ·

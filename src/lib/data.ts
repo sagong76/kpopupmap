@@ -7,7 +7,7 @@ export interface Popup {
   id: string;
   region: string;
   category: CategoryKey;
-  sponsored: boolean;
+  sponsorLangs: Lang[]; // 추천(스폰서)으로 노출할 언어
   name: L3;
   start: string; // YYYY-MM-DD
   end: string;
@@ -98,7 +98,7 @@ function normalize(r: Record<string, string>): Popup | null {
     id: slugify(r.id || '') || slugify(name.en) || 'p-' + Math.abs(hash(name.ko + start)).toString(36),
     region: regionKey,
     category: toCategory(r.category),
-    sponsored: /^(y|yes|o|true|1|추천|스폰서)$/i.test(r.sponsored || ''),
+    sponsorLangs: parseSponsor(r.sponsored),
     name,
     start,
     end: end < start ? start : end,
@@ -117,6 +117,19 @@ function normalize(r: Record<string, string>): Popup | null {
     image: url(r.image_url),
   };
 }
+
+/** sponsored 칸: y/추천 → 전체 언어, 'ja' 'ko,en' '일본' 등 → 해당 언어만 */
+function parseSponsor(v: string): Lang[] {
+  v = (v || '').trim().toLowerCase();
+  if (!v || /^(n|no|x|false|0)$/.test(v)) return [];
+  if (/^(y|yes|o|true|1|all|전체|추천|스폰서)$/.test(v)) return [...LANGS];
+  const out: Lang[] = [];
+  if (/ko|한국|한글/.test(v)) out.push('ko');
+  if (/ja|jp|일본|日本/.test(v)) out.push('ja');
+  if (/en|영어|english/.test(v)) out.push('en');
+  return out.length ? out : [...LANGS];
+}
+export const isSponsored = (p: Popup, lang: Lang) => p.sponsorLangs.includes(lang);
 
 function hash(s: string) {
   let h = 0;
@@ -142,14 +155,14 @@ export function getPopups(): Popup[] {
       seen.add(id);
       return { ...p, id };
     })
-    .sort((a, b) => Number(b.sponsored) - Number(a.sponsored) || a.start.localeCompare(b.start));
+    .sort((a, b) => a.start.localeCompare(b.start));
   return cache;
 }
 
 /** 브라우저로 보내는 가벼운 데이터 (언어 하나만) */
 export function clientPopups(lang: Lang) {
   return getPopups().map((p) => ({
-    id: p.id, r: p.region, c: p.category, s: p.sponsored ? 1 : 0,
+    id: p.id, r: p.region, c: p.category, s: isSponsored(p, lang) ? 1 : 0,
     n: p.name[lang], a: p.start, b: p.end, y: +p.lat.toFixed(6), x: +p.lng.toFixed(6),
     rv: p.reservation, f: p.foreigner, ig: p.instagram, im: p.image,
   }));

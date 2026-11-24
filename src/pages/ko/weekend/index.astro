@@ -1,0 +1,33 @@
+---
+// 한국어 전용: 이번 주말 성수 팝업 (목요일 0시 공개, 월~수는 예고)
+import Base from '../../../layouts/Base.astro';
+import WeekendEdition from '../../../components/WeekendEdition.astro';
+import PopupGrid from '../../../components/PopupGrid.astro';
+import { getPopups } from '../../../lib/data';
+import { sortForList, today } from '../../../lib/listing';
+import { currentWeekend, weekendLabel } from '../../../lib/weekend';
+const st = currentWeekend();
+const d = today();
+const openNow = st.teaser ? sortForList(getPopups().filter((p) => p.start <= d && p.end >= d), 'ko', d) : [];
+const pubLabel = st.teaser ? `${+st.publish.slice(5, 7)}월 ${+st.publish.slice(8, 10)}일(목)` : '';
+---
+{st.live ? (
+  <WeekendEdition sat={st.live} path="/weekend/" isCurrent past={st.past} />
+) : (
+  <Base lang="ko" title="이번 주말 성수 팝업스토어 총정리 - 매주 목요일 업데이트" path="/weekend/" langPaths={{ ko: '/weekend/' }} fallbackPath="/popups/"
+    desc="매주 목요일, 이번 주말 성수동에서 열리는 팝업스토어를 마감 임박·신규 오픈·계속 운영으로 나눠 정리합니다.">
+    <main class="page"><div class="wrap wide">
+      <h1 class="title">이번 주말 성수 팝업</h1>
+      <section class="card teaser">
+        <p class="big">🗓️</p>
+        <h2>{weekendLabel(st.teaser!)} 주말판은 <b style="color:var(--accent-d)">{pubLabel}</b>에 공개돼요</h2>
+        <p class="muted">매주 목요일, 그 주 주말에 갈 수 있는 성수 팝업을 마감 임박 · 신규 오픈 · 계속 운영으로 나눠 정리합니다.</p>
+        <p class="btnrow" style="justify-content:center">
+          <a class="btn pri" style="flex:0 1 auto" href="/ko/?d=weekend">🗺️ 지도에서 주말 팝업 미리 보기</a>
+          {st.past.length > 0 && <a class="btn" style="flex:0 1 auto" href={`/ko/weekend/${st.past.at(-1)}/`}>지난 주말판 보기</a>}
+        </p>
+      </section>
+      {openNow.length > 0 && <section><h2 class="h2">📍 지금 운영 중인 팝업 <span class="count">{openNow.length}곳</span></h2><PopupGrid lang="ko" list={openNow} /></section>}
+    </div></main>
+  </Base>
+)}

@@ -1,0 +1,15 @@
+---
+// 영어 전용: 이번 달 성수 팝업
+import ListPage from '../../components/ListPage.astro';
+import { getPopups } from '../../lib/data';
+import { monthLabel, inMonth, today } from '../../lib/listing';
+const ym = today().slice(0, 7);
+const m = monthLabel(ym, 'en');
+const list = getPopups().filter((p) => inMonth(p, ym) && p.end >= today());
+---
+<ListPage lang="en" path="/this-month/" langPaths={{ en: '/this-month/' }} fallbackPath={`/month/${ym}/`}
+  title={`Seongsu Pop-ups This Month (${m}): What's On & Coming Soon`}
+  desc={`${list.length} pop-up stores open in Seongsu, Seoul this month — dates, how to book, whether foreigners can reserve, and how to get there.`}
+  h1={`Seongsu Pop-ups This Month · ${m}`}
+  intro={`Visiting Seoul this month? Here are ${list.length} pop-ups you can still catch in Seongsu. Each listing shows whether foreign visitors can book.`}
+  list={list} mapQuery="?d=all" />

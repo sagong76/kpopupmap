@@ -13,12 +13,16 @@ const lang = Astro.params.lang as Lang;
 const { g } = Astro.props as { g: ReturnType<typeof getGuides>[number] };
 const t = T[lang];
 const others = getGuides(lang).filter((x) => x.slug !== g.slug);
+// 같은 파일 이름의 글이 있는 언어만 서로 연결 (없는 언어는 그 언어의 가이드 목록으로)
+const langPaths = Object.fromEntries(
+  LANGS.filter((l) => getGuides(l).some((x) => x.slug === g.slug)).map((l) => [l, `/guide/${g.slug}/`]),
+);
 const jsonLd = {
   '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.desc,
   inLanguage: lang, url: `${SITE.url}/${lang}/guide/${g.slug}/`, publisher: { '@type': 'Organization', name: SITE.name },
 };
 ---
-<Base lang={lang} title={`${g.title} | K-Popup Map`} desc={g.desc} path={`/guide/${g.slug}/`} jsonLd={jsonLd}>
+<Base lang={lang} title={`${g.title} | K-Popup Map`} desc={g.desc} path={`/guide/${g.slug}/`} jsonLd={jsonLd} langPaths={langPaths} fallbackPath="/guide/">
   <main class="page"><div class="wrap">
     <p class="crumb"><a href={`/${lang}/guide/`}>← {t.guideTitle}</a></p>
     <article class="card prose">

@@ -7,6 +7,7 @@ type Boot = {
   cats: { k: string; n: string; col: string; ic: string }[];
   regions: { k: string; n: string; c: [number, number]; z: number; on: boolean }[];
   t: Record<string, any>;
+  fx: 'hide' | 'full';
 };
 
 const B: Boot = JSON.parse(document.getElementById('boot')!.textContent!);
@@ -160,7 +161,7 @@ function badges(p: P) {
   let h = `<span class="badge ${cls}">${esc(label)}</span>`;
   if (p.s) h += `<span class="badge sp">★ ${esc(t.sp)}</span>`;
   if (p.rv === 'required') h += `<span class="badge resv">${esc(t.resv.required)}</span>`;
-  if (p.f === 'yes') h += `<span class="badge fx">🌏 ${esc(t.foreign.yes)}</span>`;
+  if (B.fx === 'full' && (p.f === 'yes' || p.f === 'onsite')) h += `<span class="badge fx">🌏 ${esc(t.foreign[p.f])}</span>`;
   return h;
 }
 function renderList(vis: P[]) {

@@ -32,6 +32,8 @@ function onOpen() {
     .addItem('⚙️ 처음 설정: 시트 머리글·드롭다운 만들기', 'setupSheet')
     .addItem('⚙️ 배포 훅(Deploy Hook) URL 등록', 'setDeployHook')
     .addItem('⚙️ 매일 새벽 자동 배포 켜기', 'installDailyTrigger')
+    .addItem('📬 수요일 주말판 준비 메일 켜기', 'installWeeklyReminder')
+    .addItem('📬 주말판 준비 메일 지금 받아보기', 'weeklyReminder')
     .addToUi();
 }
 
@@ -216,4 +218,52 @@ function setupSheet() {
     if (idx[k] !== undefined) sh.getRange(2, idx[k] + 1, 1000, 1).setNumberFormat('yyyy-mm-dd');
   });
   SpreadsheetApp.getUi().alert('설정 완료! 이제 팝업 정보를 붙여넣으세요.');
+}
+
+// ───────── 주말판(목요일 발행) 준비 알림 ─────────
+// 매주 수요일 오전, 이번 주말에 열리는 팝업 수와 빠진 정보를 메일로 보냅니다.
+function installWeeklyReminder() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'weeklyReminder') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('weeklyReminder').timeBased().onWeekDay(ScriptApp.WeekDay.WEDNESDAY)
+    .atHour(10).inTimezone('Asia/Seoul').create();
+  SpreadsheetApp.getUi().alert('매주 수요일 오전 10시쯤 주말판 준비 메일이 옵니다.');
+}
+
+function weeklyReminder() {
+  var tz = 'Asia/Seoul';
+  var now = new Date();
+  var dow = Number(Utilities.formatDate(now, tz, 'u')); // 1=월 … 7=일
+  var sat = new Date(now.getTime() + ((6 - dow + 7) % 7) * 864e5);
+  var satS = Utilities.formatDate(sat, tz, 'yyyy-MM-dd');
+  var sunS = Utilities.formatDate(new Date(sat.getTime() + 864e5), tz, 'yyyy-MM-dd');
+  var thuS = Utilities.formatDate(new Date(sat.getTime() - 2 * 864e5), tz, 'M월 d일');
+  var norm = function (v) {
+    var m = String(v || '').match(/(\d{2,4})\D+(\d{1,2})\D+(\d{1,2})/);
+    if (!m) return '';
+    return (m[1].length === 2 ? '20' + m[1] : m[1]) + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+  };
+  var on = [], lines = [];
+  readRows_().forEach(function (r) {
+    var o = r.obj;
+    if (o.status === 'hide') return;
+    var a = norm(o.start_date), b = norm(o.end_date) || a;
+    if (!a || a > sunS || b < satS) return;
+    var miss = [];
+    if (!o.hours) miss.push('운영시간');
+    if (!o.instagram && !o.homepage) miss.push('인스타/홈페이지');
+    if (!o.reservation || o.reservation === 'unknown') miss.push('예약방식');
+    if (!o.foreigner || o.foreigner === 'unknown') miss.push('외국인예약');
+    if (!o.station_ko) miss.push('가까운역');
+    on.push(o);
+    lines.push('· ' + o.name_ko + ' (' + a.slice(5) + '~' + b.slice(5) + ')' + (miss.length ? '  ← 빠짐: ' + miss.join(', ') : '  ✓'));
+  });
+  var hasDaily = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'scheduledDeploy'; });
+  var body = '이번 주말(' + satS.slice(5) + '~' + sunS.slice(5) + ') 주말판은 ' + thuS + '(목) 0시에 자동 공개됩니다.\n\n'
+    + '현재 등록된 이번 주말 팝업: ' + on.length + '곳\n\n' + (lines.join('\n') || '(아직 없음)') + '\n\n'
+    + '오늘 안에 새 팝업을 추가하고 빠진 정보를 채운 뒤 [🚀 사이트에 배포하기]를 눌러 주세요.\n'
+    + (hasDaily ? '' : '\n⚠️ "매일 새벽 자동 배포"가 꺼져 있습니다. 꺼져 있으면 목요일에 주말판이 공개되지 않습니다. 시트 메뉴에서 켜 주세요.\n')
+    + '\n시트 열기: ' + SpreadsheetApp.getActive().getUrl();
+  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), '[K-Popup Map] 주말판 준비: 이번 주말 팝업 ' + on.length + '곳', body);
 }

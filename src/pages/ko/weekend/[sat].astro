@@ -1,0 +1,14 @@
+---
+// 한국어 전용: 지난 주말판 아카이브 (발행 후 주말이 끝난 판만 개별 주소로 보관)
+import WeekendEdition from '../../../components/WeekendEdition.astro';
+import { today } from '../../../lib/listing';
+import { editions, currentWeekend } from '../../../lib/weekend';
+export function getStaticPaths() {
+  const st = currentWeekend();
+  const live = st.live;
+  return editions().filter((s) => s !== live).map((sat) => ({ params: { sat } }));
+}
+const sat = Astro.params.sat!;
+const past = editions(today()).filter((s) => s !== currentWeekend().live);
+---
+<WeekendEdition sat={sat} path={`/weekend/${sat}/`} isCurrent={false} past={past} />

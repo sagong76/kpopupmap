@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import AdSlot from './AdSlot.astro';
 import Affiliates from './Affiliates.astro';
 import PopupGrid from './PopupGrid.astro';
-import { CATEGORIES, SITE, type Lang } from '../config';
+import { SITE, catsFor, type Lang } from '../config';
 import { T } from '../i18n';
 import { getPopups, type Popup } from '../lib/data';
 import { L, statusOf, sortForList, monthsOf, monthLabel, today } from '../lib/listing';
@@ -11,18 +11,21 @@ import { L, statusOf, sortForList, monthsOf, monthLabel, today } from '../lib/li
 interface Props {
   lang: Lang; path: string; title: string; desc: string; h1: string; intro?: string;
   list: Popup[]; showEnded?: boolean; mapQuery?: string;
+  langPaths?: Partial<Record<Lang, string>>; fallbackPath?: string; hidePills?: boolean;
+  monthLinks?: { base: string; months: string[]; title?: string };
 }
-const { lang, path, title, desc, h1, intro, list, showEnded = false, mapQuery = '' } = Astro.props;
+const { lang, path, title, desc, h1, intro, list, showEnded = false, mapQuery = '', langPaths, fallbackPath, hidePills = false, monthLinks } = Astro.props;
 const t = T[lang], l = L[lang];
 const d = today();
-const sorted = sortForList(list, d);
+const sorted = sortForList(list, lang, d);
 const groups = (['open', 'upcoming', 'ended'] as const)
   .map((s) => ({ s, items: sorted.filter((p) => statusOf(p, d) === s) }))
   .filter((g) => g.items.length && (g.s !== 'ended' || showEnded));
 const all = getPopups();
 const live = all.filter((p) => p.end >= d);
-const cats = CATEGORIES.filter((c) => live.some((p) => p.category === c.key));
-const months = monthsOf(all);
+const cats = catsFor(lang).filter((c) => live.some((p) => p.category === c.key));
+const months = monthLinks?.months ?? monthsOf(all);
+const monthBase = monthLinks?.base ?? '/month/';
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
@@ -32,19 +35,19 @@ const jsonLd = {
   })),
 };
 ---
-<Base lang={lang} title={title} desc={desc} path={path} jsonLd={jsonLd} noindex={list.length === 0}>
+<Base lang={lang} title={title} desc={desc} path={path} jsonLd={jsonLd} noindex={list.length === 0} langPaths={langPaths} fallbackPath={fallbackPath}>
   <main class="page">
     <div class="wrap wide">
       <h1 class="title">{h1}</h1>
       {intro && <p class="muted">{intro}</p>}
       <p><a class="btn" href={`/${lang}/${mapQuery}`}>🗺️ {l.viewMap}</a></p>
 
-      <nav class="pills" aria-label={l.byCat}>
+      {!hidePills && <nav class="pills" aria-label={l.byCat}>
         <a href={`/${lang}/popups/`} aria-current={path === '/popups/' ? 'page' : undefined}>{l.allCat}</a>
         {cats.map((c) => (
           <a href={`/${lang}/category/${c.key}/`} aria-current={path === `/category/${c.key}/` ? 'page' : undefined}>{c.icon} {c[lang]}</a>
         ))}
-      </nav>
+      </nav>}
 
       {groups.length === 0 && <p class="card muted">{l.empty}</p>}
       {groups.map((g, i) => (
@@ -56,22 +59,14 @@ const jsonLd = {
       ))}
 
       <section class="card">
-        <h2 class="h3">📅 {l.byMonth}</h2>
+        <h2 class="h3">📅 {monthLinks?.title ?? l.byMonth}</h2>
         <nav class="pills" style="margin:0">
           {months.map((m) => (
-            <a href={`/${lang}/month/${m}/`} aria-current={path === `/month/${m}/` ? 'page' : undefined}>{monthLabel(m, lang)}</a>
+            <a href={`/${lang}${monthBase}${m}/`} aria-current={path === `${monthBase}${m}/` ? 'page' : undefined}>{monthLabel(m, lang)}</a>
           ))}
         </nav>
       </section>
       <Affiliates lang={lang} />
     </div>
   </main>
-  <script is:inline define:vars={{ S: { open: t.open, upcoming: t.upcoming, ended: t.ended, last: t.endsToday } }}>
-    var td = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
-    document.querySelectorAll('[data-st]').forEach(function (el) {
-      var a = el.dataset.a, b = el.dataset.b;
-      var k = b < td ? 'ended' : a > td ? 'upcoming' : b === td ? 'last' : 'open';
-      el.className = 'badge ' + k; el.textContent = S[k];
-    });
-  </script>
 </Base>

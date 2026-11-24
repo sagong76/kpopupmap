@@ -4,7 +4,7 @@ import AdSlot from '../../../components/AdSlot.astro';
 import Affiliates from '../../../components/Affiliates.astro';
 import { LANGS, CATEGORIES, REGIONS, FORMS, SITE, type Lang } from '../../../config';
 import { T } from '../../../i18n';
-import { getPopups, type Popup } from '../../../lib/data';
+import { getPopups, isSponsored, type Popup } from '../../../lib/data';
 
 export function getStaticPaths() {
   const all = getPopups();
@@ -85,7 +85,7 @@ const jsonLd = {
       <section class="card">
         <div class="badges">
           <span class="badge" id="st" data-a={p.start} data-b={p.end}></span>
-          {p.sponsored && <span class="badge sp">★ {t.sponsored}</span>}
+          {isSponsored(p, lang) && <span class="badge sp">★ {t.sponsored}</span>}
           <span class="cat">{cat.icon} {cat[lang]}</span>
           <span class="cat">📍 {regionName}</span>
         </div>

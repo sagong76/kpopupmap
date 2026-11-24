@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { LANGS, CATEGORIES, REGIONS, MAP_STYLE, SITE, SOCIAL, type Lang } from '../../config';
+import { LANGS, REGIONS, MAP_STYLE, SITE, SOCIAL, LANG_PROFILE, catsFor, type Lang } from '../../config';
 import { T } from '../../i18n';
 import { clientPopups } from '../../lib/data';
 
@@ -14,7 +14,8 @@ const boot = {
   lang,
   style: MAP_STYLE,
   popups,
-  cats: CATEGORIES.map((c) => ({ k: c.key, n: c[lang], col: c.color, ic: c.icon })),
+  cats: catsFor(lang).map((c) => ({ k: c.key, n: c[lang], col: c.color, ic: c.icon })),
+  fx: LANG_PROFILE[lang].foreignBadge,
   regions: REGIONS.map((r) => ({ k: r.key, n: r[lang], c: r.center, z: r.zoom, on: r.active })),
   t: {
     detail: t.detail, open: t.open, upcoming: t.upcoming, ended: t.ended, endsToday: t.endsToday,
@@ -81,7 +82,7 @@ const dows = { ko: ['일', '월', '화', '수', '목', '금', '토'], ja: ['日'
             <span><button class="linkbtn" id="catAll">{t.allOn}</button> · <button class="linkbtn" id="catNone">{t.allOff}</button></span>
           </h2>
           <div class="cats" id="cats">
-            {CATEGORIES.map((c) => (
+            {catsFor(lang).map((c) => (
               <button class="chip on" data-cat={c.key} style={`--c:${c.color}`} aria-pressed="true">
                 <span class="sw"></span>{c.icon} {c[lang]} <span class="n" data-n={c.key}></span>
               </button>

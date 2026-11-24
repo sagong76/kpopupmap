@@ -90,3 +90,38 @@ export const SEARCH_VERIFY = {
   naver: '2ea859831a5373232c1469e4255c022914efcac4',
   bing: '',
 };
+
+// ─────────────────────────────────────────────────────────────
+//  언어별 운영 설정 — 팝업 정보는 공통, 보여주는 방식은 언어마다 다르게
+// ─────────────────────────────────────────────────────────────
+export interface LangProfile {
+  catOrder: CategoryKey[]; // 카테고리 표시 순서
+  foreignBadge: 'hide' | 'full'; // 목록·카드의 "외국인 예약 가능" 배지
+  socials: (keyof typeof SOCIAL)[]; // 사이트에 보여줄 SNS
+  feature: { label: string; path: string }; // 상단 메뉴의 언어별 기획 페이지
+}
+export const LANG_PROFILE: Record<Lang, LangProfile> = {
+  ko: {
+    catOrder: ['beauty', 'fashion', 'food', 'lifestyle', 'character', 'kpop', 'etc'],
+    foreignBadge: 'hide',
+    socials: ['instagram', 'threads', 'youtube'],
+    feature: { label: '이번 주말', path: '/weekend/' },
+  },
+  ja: {
+    catOrder: ['kpop', 'beauty', 'fashion', 'character', 'food', 'lifestyle', 'etc'],
+    foreignBadge: 'full',
+    socials: ['x', 'instagram'],
+    feature: { label: 'K-POP', path: '/kpop/' },
+  },
+  en: {
+    catOrder: ['kpop', 'beauty', 'fashion', 'food', 'character', 'lifestyle', 'etc'],
+    foreignBadge: 'full',
+    socials: ['instagram', 'tiktok', 'youtube'],
+    feature: { label: 'This month', path: '/this-month/' },
+  },
+};
+export const catsFor = (lang: Lang) =>
+  LANG_PROFILE[lang].catOrder.map((k) => CATEGORIES.find((c) => c.key === k)!);
+
+// 한국어 "이번 주말" 모음: 매주 목요일 0시(서울)에 공개. 첫 발행 목요일.
+export const WEEKEND_LAUNCH = '2026-11-26';

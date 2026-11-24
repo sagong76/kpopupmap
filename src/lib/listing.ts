@@ -1,19 +1,22 @@
 import type { Lang } from '../config';
+import { isSponsored } from './data';
 import type { Popup } from './data';
 
 /** 서울 기준 오늘 날짜 (빌드 시점) */
-export const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+export const today = () =>
+  process.env.KPM_TODAY || new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); // KPM_TODAY: 테스트용 날짜 고정
 
 export type Status = 'open' | 'upcoming' | 'ended';
 export const statusOf = (p: Popup, d = today()): Status => (p.end < d ? 'ended' : p.start > d ? 'upcoming' : 'open');
 
 /** 진행중 → 오픈예정 → 종료 순, 그 안에서는 스폰서 → 종료 임박/오픈 임박 순 */
-export function sortForList(list: Popup[], d = today()) {
+export function sortForList(list: Popup[], lang: Lang, d = today()) {
   const rank = { open: 0, upcoming: 1, ended: 2 } as const;
   return [...list].sort((a, b) => {
     const sa = statusOf(a, d), sb = statusOf(b, d);
     if (sa !== sb) return rank[sa] - rank[sb];
-    if (a.sponsored !== b.sponsored) return Number(b.sponsored) - Number(a.sponsored);
+    const sa2 = isSponsored(a, lang), sb2 = isSponsored(b, lang);
+    if (sa2 !== sb2) return Number(sb2) - Number(sa2);
     if (sa === 'open') return a.end.localeCompare(b.end);
     if (sa === 'upcoming') return a.start.localeCompare(b.start);
     return b.end.localeCompare(a.end);

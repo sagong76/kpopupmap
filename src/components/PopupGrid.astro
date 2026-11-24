@@ -1,28 +1,32 @@
 ---
-import { CATEGORIES, REGIONS, type Lang } from '../config';
+import { CATEGORIES, REGIONS, LANG_PROFILE, type Lang } from '../config';
 import { T } from '../i18n';
-import type { Popup } from '../lib/data';
+import { isSponsored, type Popup } from '../lib/data';
 import { shortDate } from '../lib/listing';
-interface Props { lang: Lang; list: Popup[] }
-const { lang, list } = Astro.props;
+interface Props { lang: Lang; list: Popup[]; note?: (p: Popup) => string | undefined }
+const { lang, list, note } = Astro.props;
 const t = T[lang];
+const fx = LANG_PROFILE[lang].foreignBadge;
 ---
 <ul class="grid">
   {list.map((p) => {
     const c = CATEGORIES.find((x) => x.key === p.category)!;
     const r = REGIONS.find((x) => x.key === p.region);
+    const n = note?.(p);
     return (
       <li>
         <a class="gcard" href={`/${lang}/popup/${p.id}/`}>
           <div class="gimg" style={`background:${c.color}1f`}>
             {p.image ? <img src={p.image} alt={p.name[lang]} loading="lazy" decoding="async" width="300" height="375" /> : <span>{c.icon}</span>}
-            {p.sponsored && <span class="badge sp gsp">★ {t.sponsored}</span>}
+            {isSponsored(p, lang) && <span class="badge sp gsp">★ {t.sponsored}</span>}
+            {n && <span class="gnote">{n}</span>}
           </div>
           <div class="gbody">
             <div class="badges">
               <span class="badge" data-st data-a={p.start} data-b={p.end}></span>
-              {p.foreigner === 'yes' && <span class="badge fx">🌏</span>}
               {p.reservation === 'required' && <span class="badge resv">{t.resv.required}</span>}
+              {fx === 'full' && p.foreigner === 'yes' && <span class="badge fx">🌏 {t.foreign.yes}</span>}
+              {fx === 'full' && p.foreigner === 'onsite' && <span class="badge fx">🌏 {t.foreign.onsite}</span>}
             </div>
             <h3 class="gname">{p.name[lang]}</h3>
             <div class="gmeta">📍 {r ? r[lang] : p.region}</div>
@@ -34,3 +38,13 @@ const t = T[lang];
     );
   })}
 </ul>
+<script is:inline define:vars={{ S: { open: t.open, upcoming: t.upcoming, ended: t.ended, last: t.endsToday } }}>
+  (function () {
+    var td = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+    document.querySelectorAll('[data-st]:not([data-done])').forEach(function (el) {
+      var a = el.dataset.a, b = el.dataset.b;
+      var k = b < td ? 'ended' : a > td ? 'upcoming' : b === td ? 'last' : 'open';
+      el.className = 'badge ' + k; el.textContent = S[k]; el.dataset.done = '1';
+    });
+  })();
+</script>
