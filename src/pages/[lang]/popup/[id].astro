@@ -55,7 +55,7 @@ const jsonLd = {
   eventStatus: 'https://schema.org/EventScheduled',
   eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
   description: p.desc[lang] || desc,
-  image: p.image ? [p.image] : [`${SITE.url}/og-default.png`],
+  image: p.ogImage ? [`${SITE.url}${p.ogImage}`, `${SITE.url}${p.image}`] : [`${SITE.url}/og-default.png`],
   url: `${SITE.url}/${lang}/popup/${p.id}/`,
   inLanguage: lang,
   location: {
@@ -73,13 +73,13 @@ const jsonLd = {
   ...(p.reservationUrl ? { offers: { '@type': 'Offer', url: p.reservationUrl, availability: 'https://schema.org/InStock', price: '0', priceCurrency: 'KRW', validFrom: `${p.start}T00:00+09:00` } } : {}),
 };
 ---
-<Base lang={lang} title={title} desc={desc} path={`/popup/${p.id}/`} image={p.image || undefined} jsonLd={jsonLd}>
+<Base lang={lang} title={title} desc={desc} path={`/popup/${p.id}/`} image={p.ogImage ? `${SITE.url}${p.ogImage}` : undefined} jsonLd={jsonLd}>
   <main class="page">
     <div class="wrap">
       <p class="crumb"><a href={`/${lang}/#p=${p.id}`}>← {t.back}</a></p>
 
       <div class="hero" style={`background:${cat.color}1f`}>
-        {p.image ? <img src={p.image} alt={name} width="860" height="645" fetchpriority="high" /> : <span>{cat.icon}</span>}
+        {p.image ? <img src={p.image} alt={name} width="800" height="1000" fetchpriority="high" /> : <span>{cat.icon}</span>}
       </div>
 
       <section class="card">
@@ -137,7 +137,7 @@ const jsonLd = {
               const c = CATEGORIES.find((x) => x.key === n.category)!;
               return (
                 <li><a class="item" href={`/${lang}/popup/${n.id}/`}>
-                  {n.image ? <img class="thumb" src={n.image} alt="" loading="lazy" width="62" height="62" /> : <span class="thumb" style={`background:${c.color}1f`}>{c.icon}</span>}
+                  {n.thumb ? <img class="thumb" src={n.thumb} alt="" loading="lazy" width="62" height="62" /> : <span class="thumb" style={`background:${c.color}1f`}>{c.icon}</span>}
                   <div><div class="item-name">{n.name[lang]}</div><div class="item-meta">{n.start.slice(5).replace('-', '/')} – {n.end.slice(5).replace('-', '/')} · {c[lang]}</div></div>
                 </a></li>
               );

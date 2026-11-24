@@ -200,6 +200,9 @@ function validate_() {
     if (o.end_date && o.start_date && o.end_date < o.start_date) mark(r, 'end_date', '종료일이 시작일보다 빠름');
     if (!o.lat || !o.lng) mark(r, 'address_ko', '좌표 없음 — 주소(address_ko)를 넣거나 lat/lng 직접 입력');
     if (o.reservation_url && !/^https?:\/\//.test(o.reservation_url)) mark(r, 'reservation_url', '예약 링크는 https:// 로 시작');
+    if (o.image_url && /cdninstagram|fbcdn|scontent/.test(o.image_url)) mark(r, 'image_url', '인스타그램 이미지 주소는 며칠 뒤 깨집니다. 구글 드라이브에 올린 뒤 그 링크를 넣어 주세요');
+    if (o.image_url && /drive\.google\.com\/drive\/folders/.test(o.image_url)) mark(r, 'image_url', '폴더 링크가 아니라 사진 파일 하나의 링크를 넣어 주세요');
+    if (o.image_url && !/^https?:\/\//.test(o.image_url)) mark(r, 'image_url', '이미지 링크는 https:// 로 시작');
   });
   return errors;
 }

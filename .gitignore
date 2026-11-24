@@ -3,3 +3,5 @@ dist/
 .astro/
 .env
 data/popups.remote.json
+public/img/p/
+data/images.json

@@ -23,7 +23,9 @@ export interface Popup {
   method: 'naver' | 'catchtable' | 'tabling' | 'instagram' | 'website' | 'onsite' | 'none';
   reservationUrl: string;
   desc: L3;
-  image: string;
+  image: string; // 800px WebP (없으면 '')
+  thumb: string; // 400px WebP
+  ogImage: string; // 1200x630 JPG (공유 미리보기)
 }
 
 const lc = (s: string) => (s || '').toLowerCase().replace(/\s+/g, '');
@@ -114,7 +116,7 @@ function normalize(r: Record<string, string>): Popup | null {
     method: pick(r.reservation_method, [[/naver|네이버/, 'naver'], [/catch|캐치/, 'catchtable'], [/tabling|테이블링/, 'tabling'], [/insta|인스타/, 'instagram'], [/web|site|홈페이지|사이트/, 'website'], [/onsite|현장/, 'onsite']], 'none'),
     reservationUrl: url(r.reservation_url),
     desc: l3(r, 'desc'),
-    image: url(r.image_url),
+    ...imageFor(r.image_url),
   };
 }
 
@@ -135,6 +137,17 @@ function hash(s: string) {
   let h = 0;
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
   return h;
+}
+
+// scripts/fetch-images.mjs 가 만든 이미지 목록 (원본 주소 → 변환된 파일)
+let imgMap: Record<string, { s: string; m: string; og: string }> | null = null;
+function imageFor(raw: string) {
+  if (!imgMap) {
+    const f = new URL('../../data/images.json', import.meta.url);
+    imgMap = existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : {};
+  }
+  const hit = imgMap![(raw || '').trim()];
+  return { image: hit?.m ?? '', thumb: hit?.s ?? '', ogImage: hit?.og ?? '' };
 }
 
 let cache: Popup[] | null = null;
@@ -164,7 +177,7 @@ export function clientPopups(lang: Lang) {
   return getPopups().map((p) => ({
     id: p.id, r: p.region, c: p.category, s: isSponsored(p, lang) ? 1 : 0,
     n: p.name[lang], a: p.start, b: p.end, y: +p.lat.toFixed(6), x: +p.lng.toFixed(6),
-    rv: p.reservation, f: p.foreigner, ig: p.instagram, im: p.image,
+    rv: p.reservation, f: p.foreigner, ig: p.instagram, im: p.thumb,
   }));
 }
 
