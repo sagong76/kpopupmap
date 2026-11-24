@@ -24,7 +24,7 @@ const dateFmt = (s: string) =>
   new Date(s + 'T00:00:00+09:00').toLocaleDateString({ ko: 'ko-KR', ja: 'ja-JP', en: 'en-US' }[lang], { timeZone: 'Asia/Seoul', year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
 const periodText = p.start === p.end ? dateFmt(p.start) : `${dateFmt(p.start)} ~ ${dateFmt(p.end)}`;
 
-const title = { ko: `${name} - 성수 팝업스토어 기간·예약·위치`, ja: `${name} - 聖水ポップアップ 期間・予約・場所`, en: `${name} - Seongsu Pop-up: Dates, Booking & Location` }[lang];
+const title = { ko: `${name} - 성수 팝업스토어 기간·예약·위치`, ja: `${name} | 聖水(ソンス)ポップアップ 期間・予約・行き方`, en: `${name} - Seongsu Pop-up: Dates, Booking & Location` }[lang];
 const desc = `${periodText} · ${regionName} · ${cat[lang]}. ${p.desc[lang]}`.slice(0, 155);
 
 const q = encodeURIComponent(p.address.ko || `${p.name.ko} ${region?.ko ?? ''}`);
