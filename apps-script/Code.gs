@@ -9,7 +9,7 @@ var HEADERS = ['id', 'status', 'sponsored', 'region', 'category', 'name_ko', 'na
   'start_date', 'end_date', 'hours', 'address_ko', 'address_en', 'lat', 'lng',
   'station_ko', 'station_ja', 'station_en', 'instagram', 'homepage',
   'reservation', 'foreigner', 'reservation_method', 'reservation_url',
-  'desc_ko', 'desc_ja', 'desc_en', 'image_url'];
+  'desc_ko', 'desc_ja', 'desc_en', 'image_url', 'hashtags'];
 
 var LISTS = {
   status: ['show', 'hide'],
@@ -24,6 +24,9 @@ var LISTS = {
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🚀 팝업맵')
     .addItem('🚀 사이트에 배포하기 (검사+좌표+번역 포함)', 'deploy')
+    .addSeparator()
+    .addItem('🐦 X 게시글 만들기 (선택한 줄)', 'xPostSelected')
+    .addItem('🐦 X 今週末まとめ 스레드 만들기', 'xPostWeekend')
     .addSeparator()
     .addItem('✅ 데이터 검사만', 'validateOnly')
     .addItem('📍 주소 → 좌표 채우기', 'fillCoordinates')
@@ -266,4 +269,160 @@ function weeklyReminder() {
     + (hasDaily ? '' : '\n⚠️ "매일 새벽 자동 배포"가 꺼져 있습니다. 꺼져 있으면 목요일에 주말판이 공개되지 않습니다. 시트 메뉴에서 켜 주세요.\n')
     + '\n시트 열기: ' + SpreadsheetApp.getActive().getUrl();
   MailApp.sendEmail(Session.getEffectiveUser().getEmail(), '[K-Popup Map] 주말판 준비: 이번 주말 팝업 ' + on.length + '곳', body);
+}
+
+// ───────── X(트위터) 일본어 게시글 자동 생성 ─────────
+var SITE_URL = 'https://kpopupmap.com';
+var JA_DOW = ['日', '月', '火', '水', '木', '金', '土'];
+var X_CAT = {
+  beauty: { ic: '💄', tag: '#韓国コスメ' }, kpop: { ic: '🎤', tag: '#KPOP' },
+  food: { ic: '🍰', tag: '#韓国カフェ' }, fashion: { ic: '👟', tag: '#韓国ファッション' },
+  character: { ic: '🧸', tag: '#キャラクター' }, lifestyle: { ic: '🏠', tag: '#韓国雑貨' }, etc: { ic: '✨', tag: '' },
+};
+var X_RESV = { required: '要予約', optional: '予約推奨', walkin: '不要(現地待ち)', none: '不要', unknown: '要確認' };
+var X_FX = { yes: 'OK', no: '予約は難しい', onsite: '現地待ちOK', unknown: '要確認' };
+
+function xCat_(v) {
+  var s = String(v || '').toLowerCase().replace(/\s+/g, '');
+  var map = {
+    beauty: ['beauty', '뷰티', '코스메틱'], kpop: ['kpop', 'k-pop', '케이팝', '연예인', '연예인/셀럽', '셀럽', '아이돌'],
+    food: ['food', '음식', '카페', 'f&b', 'fnb', '음식·카페', '디저트'], fashion: ['fashion', '패션', '의류'],
+    character: ['character', '캐릭터', '캐릭터·ip', 'ip', '애니', '게임'], lifestyle: ['lifestyle', '라이프스타일', '리빙', '전시'],
+  };
+  for (var k in map) if (map[k].indexOf(s) >= 0) return k;
+  return 'etc';
+}
+function xEnum_(v, pairs, dflt) {
+  var s = String(v || '').toLowerCase().replace(/\s+/g, '');
+  if (!s) return dflt;
+  for (var i = 0; i < pairs.length; i++) if (pairs[i][0].test(s)) return pairs[i][1];
+  return dflt;
+}
+function xResv_(v) { return xEnum_(v, [[/required|필수/, 'required'], [/optional|권장|선택/, 'optional'], [/walk|현장|웨이팅|대기/, 'walkin'], [/none|없음|자유|불필요/, 'none']], 'unknown'); }
+function xFx_(v) { return xEnum_(v, [[/onsite|현장/, 'onsite'], [/^(yes|y|o|가능|true)$/, 'yes'], [/^(no|n|x|불가|false)/, 'no']], 'unknown'); }
+function xDate_(v) {
+  var m = String(v || '').match(/(\d{2,4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if (!m) return '';
+  return (m[1].length === 2 ? '20' + m[1] : m[1]) + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+}
+function xMd_(ymd) {
+  var d = new Date(ymd + 'T00:00:00Z');
+  return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '(' + JA_DOW[d.getUTCDay()] + ')';
+}
+function xAddDays_(ymd, n) { var d = new Date(ymd + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function xToday_() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd'); }
+
+/** X 글자 수 (일본어·이모지 2, URL 23, 영문 1) */
+function xWeight_(text) {
+  var n = 0;
+  text = text.replace(/https?:\/\/\S+/g, function () { n += 23; return ''; });
+  for (var i = 0; i < text.length; i++) {
+    var c = text.codePointAt(i);
+    if (c > 0xffff) i++;
+    n += (c <= 4351 || (c >= 8192 && c <= 8205) || (c >= 8208 && c <= 8223) || (c >= 8242 && c <= 8247)) ? 1 : 2;
+  }
+  return n;
+}
+
+/** 팝업 한 줄 → X 게시글 */
+function xBuildPost_(o, today) {
+  var a = xDate_(o.start_date), b = xDate_(o.end_date) || a;
+  var cat = X_CAT[xCat_(o.category)];
+  var name = o.name_ja || o.name_en || o.name_ko;
+  var head = a > today ? (a <= xAddDays_(today, 7) ? '【まもなくオープン】' : '【近日オープン】')
+    : b === today ? '【本日最終日】'
+    : b <= xAddDays_(today, 3) ? '【まもなく終了】'
+    : a >= xAddDays_(today, -3) ? '【NEW】聖水ポップアップ' : '【聖水ポップアップ】';
+  var date = a === b ? xMd_(a) + 'のみ' : xMd_(a) + '〜' + xMd_(b);
+  var tags = ['#渡韓', '#聖水'];
+  if (cat.tag) tags.push(cat.tag);
+  String(o.hashtags || '').split(/[\s,、]+/).forEach(function (t) {
+    if (!t) return; t = t.charAt(0) === '#' ? t : '#' + t;
+    if (tags.indexOf(t) < 0) tags.push(t);
+  });
+  var lines = [head, cat.ic + ' ' + name, '📅 ' + date];
+  var station = o.station_ja ? '📍 ' + o.station_ja : '📍 聖水エリア';
+  var resv = '🎟 予約：' + X_RESV[xResv_(o.reservation)] + '｜外国人：' + X_FX[xFx_(o.foreigner)];
+  var link = '詳細・地図はこちら👇\n' + SITE_URL + '/ja/popup/' + o.id + '/';
+  var build = function (st, tg) { return lines.concat(st ? [st] : [], [resv, '', link, '', tg.join(' ')]).join('\n'); };
+  // 280 넘으면: 해시태그 줄이기 → 역 줄 빼기 → 이름 자르기
+  var text = build(station, tags);
+  while (xWeight_(text) > 280 && tags.length > 2) { tags.pop(); text = build(station, tags); }
+  if (xWeight_(text) > 280) text = build('', tags);
+  while (xWeight_(text) > 280 && name.length > 10) { name = name.slice(0, -2); lines[1] = cat.ic + ' ' + name + '…'; text = build('', tags); }
+  return text;
+}
+
+function xRowsForSelection_() {
+  var sh = sheet_();
+  if (SpreadsheetApp.getActiveSheet().getName() !== SHEET) throw new Error('"' + SHEET + '" 탭에서 팝업 줄을 선택한 뒤 실행하세요.');
+  var want = {};
+  SpreadsheetApp.getActiveRangeList().getRanges().forEach(function (rg) {
+    for (var r = rg.getRow(); r < rg.getRow() + rg.getNumRows(); r++) want[r] = true;
+  });
+  return readRows_().filter(function (r) { return want[r.row]; });
+}
+
+function xPostSelected() {
+  fillIds_();
+  var rows;
+  try { rows = xRowsForSelection_(); } catch (e) { SpreadsheetApp.getUi().alert(e.message); return; }
+  if (!rows.length) { SpreadsheetApp.getUi().alert('팝업이 있는 줄을 선택해 주세요. (여러 줄 선택 가능)'); return; }
+  var today = xToday_();
+  var posts = rows.map(function (r) { return { title: r.obj.name_ko, text: xBuildPost_(r.obj, today) }; });
+  xShowDialog_('X 게시글 (' + posts.length + '개)', posts,
+    '복사해서 X에 붙여넣거나, [X에서 열기]를 누르세요. 일본 시간 20~23시 게시를 추천합니다.<br>⚠️ 사이트에 배포된 팝업인지 확인하세요 (링크가 열려야 함).');
+}
+
+function xPostWeekend() {
+  var today = xToday_();
+  var dow = new Date(today + 'T00:00:00Z').getUTCDay();
+  var sat = dow === 0 ? xAddDays_(today, -1) : xAddDays_(today, (6 - dow + 7) % 7);
+  var sun = xAddDays_(sat, 1), mon = xAddDays_(sat, -5);
+  var on = readRows_().map(function (r) { return r.obj; }).filter(function (o) {
+    var a = xDate_(o.start_date), b = xDate_(o.end_date) || a;
+    return o.status !== 'hide' && a && a <= sun && b >= sat && o.id;
+  });
+  if (!on.length) { SpreadsheetApp.getUi().alert('이번 주말(' + sat + '~' + sun + ')에 열리는 팝업이 없습니다.'); return; }
+  var last = on.filter(function (o) { return (xDate_(o.end_date) || xDate_(o.start_date)) <= sun; });
+  var fresh = on.filter(function (o) { return xDate_(o.start_date) >= mon && last.indexOf(o) < 0; });
+  var head = ['【今週末の聖水ポップアップ】' + xMd_(sat) + '・' + xMd_(sun).replace(/^\d+\//, ''),
+    '開催中のポップアップは全' + on.length + '件!', ''];
+  if (last.length) head.push('🔥 今週末で終了 … ' + last.length + '件');
+  if (fresh.length) head.push('✨ 今週オープン … ' + fresh.length + '件');
+  var kp = on.filter(function (o) { return xCat_(o.category) === 'kpop'; }).length;
+  if (kp) head.push('🎤 K-POP … ' + kp + '件');
+  head.push('', '外国人の予約可否つき、地図で見る👇', SITE_URL + '/ja/kpop/', '', '#渡韓 #聖水 #ソンス #韓国ポップアップ');
+  var posts = [{ title: '① 첫 게시글 (스레드 시작)', text: head.join('\n') }];
+  // 스레드 답글: K-POP → 이번 주말 종료 → 신규 순, 최대 6개
+  var order = on.slice().sort(function (x, y) {
+    var sc = function (o) { return (xCat_(o.category) === 'kpop' ? 0 : 3) + (last.indexOf(o) >= 0 ? 0 : fresh.indexOf(o) >= 0 ? 1 : 2); };
+    return sc(x) - sc(y);
+  }).slice(0, 6);
+  order.forEach(function (o, i) {
+    posts.push({ title: (i + 2) + ' 답글: ' + o.name_ko, text: xBuildPost_(o, today) });
+  });
+  xShowDialog_('X 今週末まとめ 스레드 (' + posts.length + '개)', posts,
+    '① 첫 게시글을 올린 뒤, 그 게시글에 ②부터 차례로 <b>답글</b>로 이어 붙이면 스레드가 됩니다.');
+}
+
+function xShowDialog_(title, posts, help) {
+  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  var html = '<style>body{font-family:sans-serif;font-size:13px;margin:0;padding:4px}'
+    + '.p{border:1px solid #ddd;border-radius:8px;padding:8px;margin-bottom:10px}'
+    + 'textarea{width:100%;height:190px;box-sizing:border-box;font-size:13px;line-height:1.5}'
+    + 'button,a.b{background:#ff4f7b;color:#fff;border:0;border-radius:6px;padding:6px 12px;margin-right:6px;cursor:pointer;text-decoration:none;font-size:13px;display:inline-block}'
+    + 'a.b{background:#111}.n{color:#888;float:right}.over{color:#d00;font-weight:bold}</style>'
+    + '<p style="color:#555">' + help + '</p>';
+  posts.forEach(function (p, i) {
+    var w = xWeight_(p.text);
+    html += '<div class="p"><b>' + esc(p.title) + '</b><span class="n' + (w > 280 ? ' over' : '') + '">' + w + ' / 280</span>'
+      + '<textarea id="t' + i + '">' + esc(p.text) + '</textarea>'
+      + '<button onclick="cp(' + i + ',this)">📋 복사</button>'
+      + '<a class="b" target="_blank" href="https://x.com/intent/post?text=' + encodeURIComponent(p.text) + '">X에서 열기</a></div>';
+  });
+  html += '<script>function cp(i,b){var t=document.getElementById("t"+i);t.select();'
+    + 'try{navigator.clipboard.writeText(t.value).then(function(){b.textContent="✓ 복사됨"},function(){document.execCommand("copy");b.textContent="✓ 복사됨"})}'
+    + 'catch(e){document.execCommand("copy");b.textContent="✓ 복사됨"}}</script>';
+  SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(560).setHeight(640), title);
 }
